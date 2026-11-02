@@ -1,13 +1,13 @@
 {
-  "name": "Luz a su hora",
-  "short_name": "Luz",
-  "description": "Precio PVPC de hoy y mañana y la hora más barata para cada aparato.",
+  "name": "Buscador del almacén",
+  "short_name": "Almacén",
+  "description": "Busca un producto por nombre o referencia y se ilumina su sitio en el plano.",
   "lang": "es",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#0E1117",
-  "theme_color": "#14181F",
+  "background_color": "#F3F4F2",
+  "theme_color": "#1D4E89",
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }

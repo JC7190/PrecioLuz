@@ -1,9 +1,9 @@
 // Copia local de la app para que abra sin conexión.
 // Se abre siempre con la copia guardada (rápido y sin cobertura);
 // la versión nueva se baja por detrás y se ve en la siguiente apertura.
-const CACHE = "luz-v4";
+const CACHE = "almacen-v6";
 const APP = ["./", "index.html", "manifest.json", "apple-touch-icon.png", "icon-192.png", "icon-512.png",
-  "fonts/bricolage-grotesque-latin-opsz-normal.woff2", "fonts/figtree-latin-400-normal.woff2", "fonts/figtree-latin-600-normal.woff2", "fonts/jetbrains-mono-latin-400-normal.woff2", "fonts/jetbrains-mono-latin-600-normal.woff2"];
+  "inter-tight-latin-500-normal.woff2", "inter-tight-latin-600-normal.woff2", "inter-tight-latin-700-normal.woff2", "inter-tight-latin-800-normal.woff2"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(APP)).then(() => self.skipWaiting()));
@@ -11,15 +11,13 @@ self.addEventListener("install", e => {
 // Solo se borran copias viejas de ESTA app: las demás apps de jc7190.github.io comparten el mismo espacio
 self.addEventListener("activate", e => {
   e.waitUntil(caches.keys()
-    .then(keys => Promise.all(keys.filter(k => k.startsWith("luz-") && k !== CACHE).map(k => caches.delete(k))))
+    .then(keys => Promise.all(keys.filter(k => k.startsWith("almacen-") && k !== CACHE).map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
 self.addEventListener("fetch", e => {
   const req = e.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
-  // Precios de Red Eléctrica: solo con internet, nunca se guardan
-  if (/ree\.es/.test(url.hostname)) return;
   // Páginas de la app: se abre AL INSTANTE con la copia guardada.
   // Por detrás se descarga la versión nueva, que se verá la próxima vez que se abra.
   if (req.mode === "navigate") {

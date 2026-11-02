@@ -3,522 +3,511 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#14181F">
-<!-- Para instalarla en la pantalla de inicio del iPhone: icono, nombre y pantalla completa -->
+<meta name="theme-color" content="#1D4E89">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Luz">
+<meta name="apple-mobile-web-app-title" content="Almacén">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="manifest" href="manifest.json">
-<title>Luz a su hora</title>
-<meta name="description" content="La hora más barata del PVPC para poner cada aparato.">
+<title>Buscador del almacén</title>
+<meta name="description" content="Busca un producto por nombre o referencia y se ilumina su sitio en el plano del almacén.">
 <style>
 /* Tipos de letra dentro de la app: no espera a internet para pintar */
-@font-face{font-family:"Bricolage Grotesque";src:url(fonts/bricolage-grotesque-latin-opsz-normal.woff2) format("woff2-variations");font-weight:200 800;font-style:normal;font-display:swap}
-@font-face{font-family:"Figtree";src:url(fonts/figtree-latin-400-normal.woff2) format("woff2");font-weight:400;font-style:normal;font-display:swap}
-@font-face{font-family:"Figtree";src:url(fonts/figtree-latin-600-normal.woff2) format("woff2");font-weight:600;font-style:normal;font-display:swap}
-@font-face{font-family:"JetBrains Mono";src:url(fonts/jetbrains-mono-latin-400-normal.woff2) format("woff2");font-weight:400;font-style:normal;font-display:swap}
-@font-face{font-family:"JetBrains Mono";src:url(fonts/jetbrains-mono-latin-600-normal.woff2) format("woff2");font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:"Inter Tight";src:url(inter-tight-latin-500-normal.woff2) format("woff2");font-weight:500;font-style:normal;font-display:swap}
+@font-face{font-family:"Inter Tight";src:url(inter-tight-latin-600-normal.woff2) format("woff2");font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:"Inter Tight";src:url(inter-tight-latin-700-normal.woff2) format("woff2");font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:"Inter Tight";src:url(inter-tight-latin-800-normal.woff2) format("woff2");font-weight:800;font-style:normal;font-display:swap}
 </style>
 <style>
-/* Layout: una columna — precio de ahora, lista de aparatos con su mejor hora, formulario para añadir */
+/* Layout: una columna — plano arriba, buscador debajo; al elegir un producto se ilumina su sitio */
 :root {
-  --bg: #F1F3F6;
+  --bg: #F3F4F2;
   --surface: #FFFFFF;
-  --ink: #14181F;
-  --muted: #5E6878;
-  --line: #D9DEE6;
-  --accent: #2550D9;
-  --cheap: #1E8A52;
-  --mid: #C08A12;
-  --dear: #C8452F;
-  --font-display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
-  --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-data: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --ink: #1F2328;
+  --muted: #6A7077;
+  --line: #D9DCD6;
+  --wall: #2A2E33;
+  --rack: #C3C8CD;
+  --rack-ink: #2A2E33;
+  --door: #A9AEB4;
+  --hl: #FFB000;
+  --hl-ink: #7A4B00;
+  --font: "Inter Tight", system-ui, -apple-system, "Segoe UI", sans-serif;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0E1117; --surface: #171B24; --ink: #E8ECF2; --muted: #93A0B2; --line: #283041;
-    --accent: #7D9BFF; --cheap: #4CC384; --mid: #E2B04A; --dear: #F07A63; color-scheme: dark;
+    --bg: #131518; --surface: #1C1F23; --ink: #ECEEF0; --muted: #9AA1A8; --line: #2D3238;
+    --wall: #D9DCD6; --rack: #4A5058; --rack-ink: #ECEEF0; --door: #6B727A; --hl: #FFB000; --hl-ink: #FFD27A; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0E1117; --surface: #171B24; --ink: #E8ECF2; --muted: #93A0B2; --line: #283041;
-  --accent: #7D9BFF; --cheap: #4CC384; --mid: #E2B04A; --dear: #F07A63; color-scheme: dark;
+  --bg: #131518; --surface: #1C1F23; --ink: #ECEEF0; --muted: #9AA1A8; --line: #2D3238;
+  --wall: #D9DCD6; --rack: #4A5058; --rack-ink: #ECEEF0; --door: #6B727A; --hl: #FFB000; --hl-ink: #FFD27A; color-scheme: dark;
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-html, body { margin: 0; }
 body {
-  background: var(--bg); color: var(--ink); font: 16px/1.5 var(--font-body);
+  margin: 0; background: var(--bg); color: var(--ink); font: 500 16px/1.4 var(--font);
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: calc(20px + env(safe-area-inset-top, 0px)) calc(32px + env(safe-area-inset-bottom, 0px));
+  padding-block: 18px 28px;
 }
-.wrap { max-width: 560px; margin: 0 auto; display: grid; gap: 20px; }
-button, input, select { font: inherit; color: inherit; }
-button { cursor: pointer; }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wrap { max-width: 640px; margin: 0 auto; display: grid; gap: 14px; }
+h1 { font: 800 1.55rem/1.1 var(--font); margin: 0; letter-spacing: -.01em; }
+.sub { color: var(--muted); font-size: .9rem; margin-top: 4px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px; }
 
-h1 { font: 800 1.9rem/1 var(--font-display); margin: 0; letter-spacing: -.01em; }
-.now { display: grid; gap: 6px; }
-.now-line { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.price { font: 800 2.6rem/1 var(--font-display); font-variant-numeric: tabular-nums; }
-.price small { font: 400 .95rem var(--font-data); color: var(--muted); margin-left: 4px; }
-.tag { font: 600 .72rem var(--font-body); text-transform: uppercase; letter-spacing: .08em; padding: 3px 8px; border-radius: 4px; }
-.tag.cheap { color: var(--cheap); background: color-mix(in srgb, var(--cheap) 15%, transparent); }
-.tag.mid { color: var(--mid); background: color-mix(in srgb, var(--mid) 15%, transparent); }
-.tag.dear { color: var(--dear); background: color-mix(in srgb, var(--dear) 15%, transparent); }
-.sub { font: 400 .82rem/1.5 var(--font-data); color: var(--muted); }
-.extremes { display: flex; gap: 10px; flex-wrap: wrap; }
-.ext { flex: 1 1 140px; border-radius: 10px; padding: 10px 12px; display: grid; gap: 2px; }
-.ext.lo { background: color-mix(in srgb, var(--cheap) 14%, transparent); color: var(--cheap); }
-.ext.hi { background: color-mix(in srgb, var(--dear) 14%, transparent); color: var(--dear); }
-.ext-label { font: 600 .72rem var(--font-body); text-transform: uppercase; letter-spacing: .08em; }
-.ext-time { font: 800 1.6rem/1.1 var(--font-display); font-variant-numeric: tabular-nums; }
-.ext-price { font: 400 .8rem var(--font-data); }
-.chartbox { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 14px 10px; display: grid; gap: 8px; }
-.chart-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.chart-title { font: 600 .78rem var(--font-body); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
-.daytabs { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-.daytabs button { background: none; border: none; padding: 4px 12px; font-size: .82rem; color: var(--muted); }
-.daytabs button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
-.chart svg { display: block; width: 100%; height: auto; }
-.chart .hit { cursor: pointer; }
-.pick { font: 400 .82rem var(--font-data); color: var(--muted); text-align: center; min-height: 1.3em; }
-.pick b { color: var(--ink); font-weight: 600; }
-.lv-cheap { color: var(--cheap); font-weight: 600; }
-.lv-mid { color: var(--mid); font-weight: 600; }
-.lv-dear { color: var(--dear); font-weight: 600; }
-.titlebar { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-.date { font: 600 1rem var(--font-data); color: var(--muted); font-variant-numeric: tabular-nums; }
-.soon { font: 400 .75rem var(--font-body); color: var(--muted); text-align: right; }
-.chart-date { font-family: var(--font-data); letter-spacing: 0; margin-left: 6px; color: var(--ink); }
-.status { font-size: .9rem; color: var(--muted); }
-.status.err { color: var(--dear); }
+/* Plano */
+#plan { display: block; width: 100%; height: auto; }
+.zone { fill: var(--surface); transition: fill .25s; }
+.wall { fill: none; stroke: var(--wall); stroke-width: .28; stroke-linejoin: miter; }
+.wall-in { stroke: var(--wall); stroke-width: .16; }
+.div { stroke: var(--wall); stroke-width: .08; stroke-dasharray: .3 .3; }
+.rack { fill: var(--rack); stroke: var(--surface); stroke-width: .04; transition: fill .25s, opacity .25s; }
+.secdiv { stroke: var(--surface); stroke-width: .07; stroke-dasharray: .3 .2; pointer-events: none; }
+.sec { font: 700 .62px var(--font); fill: var(--rack-ink); text-anchor: middle;  pointer-events: none; }
+.gap { stroke: var(--surface); stroke-width: .3; }
+.door, .arc { stroke: var(--door); stroke-width: .07; fill: none; }
+.stairs { fill: var(--surface); stroke: var(--door); stroke-width: .08; }
+.step { stroke: var(--door); stroke-width: .05; }
+.hook { stroke: var(--wall); stroke-width: .045; stroke-linecap: round; }
+.hookdot { fill: var(--wall); }
+.halo { fill: transparent; transition: fill .25s; }
+.pas circle { fill: #2A2E33; transition: fill .25s; }
+.pas text { font: 700 .5px var(--font); fill: #FFFFFF; text-anchor: middle;  }
+.zlabel rect { fill: var(--bg); }
+.zlabel text { font: 700 .62px var(--font); fill: var(--ink); text-anchor: middle;  letter-spacing: .02px; }
 
-.list { display: grid; gap: 10px; }
+
+/* Colores de estancias */
+:root { --z-alm:#E3EEFA; --z-rec:#FFF5D1; --z-bun:#E2F3E5; --z-ban:#FBE2E2; --z-tal:#FFFFFF;
+  --zi-alm:#1D4E89; --zi-rec:#7A5A00; --zi-bun:#2C6A3A; --zi-ban:#8E2B2B; --zi-tal:#2A2E33; --zl-bg:#FFFFFF; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --z-alm:#1C2A3A; --z-rec:#33301F; --z-bun:#1D2F22; --z-ban:#382124; --z-tal:#1C1F23;
+  --zi-alm:#9CC3F0; --zi-rec:#F0D37A; --zi-bun:#9FD8AB; --zi-ban:#F2A7A7; --zi-tal:#ECEEF0; --zl-bg:#131518; } }
+:root[data-theme="dark"] { --z-alm:#1C2A3A; --z-rec:#33301F; --z-bun:#1D2F22; --z-ban:#382124; --z-tal:#1C1F23;
+  --zi-alm:#9CC3F0; --zi-rec:#F0D37A; --zi-bun:#9FD8AB; --zi-ban:#F2A7A7; --zi-tal:#ECEEF0; --zl-bg:#131518; }
+.zone.t-alm{fill:var(--z-alm)} .zone.t-rec{fill:var(--z-rec)} .zone.t-bun{fill:var(--z-bun)} .zone.t-ban{fill:var(--z-ban)} .zone.t-tal{fill:var(--z-tal)}
+.zlabel rect{fill:var(--zl-bg)}
+.zlabel.t-alm text{fill:var(--zi-alm)} .zlabel.t-rec text{fill:var(--zi-rec)} .zlabel.t-bun text{fill:var(--zi-bun)} .zlabel.t-ban text{fill:var(--zi-ban)} .zlabel.t-tal text{fill:var(--zi-tal)}
+
+
+/* El plano siempre en claro (como un papel), también en modo oscuro */
+.map { --surface:#FFFFFF; --ink:#1F2328; --wall:#2A2E33; --rack:#C3C8CD; --rack-ink:#2A2E33; --door:#A9AEB4; --bg:#F3F4F2;
+  --z-alm:#E3EEFA; --z-rec:#FFF5D1; --z-bun:#E2F3E5; --z-ban:#FBE2E2; --z-tal:#FFFFFF;
+  --zi-alm:#1D4E89; --zi-rec:#7A5A00; --zi-bun:#2C6A3A; --zi-ban:#8E2B2B; --zi-tal:#2A2E33; --zl-bg:#FFFFFF;
+  background:#FFFFFF; color-scheme: light; }
+
+/* Resaltado */
+/* Al elegir: todo apagado menos la estancia del producto; su sitio en color vivo de la estancia */
+:root { --v-alm:#3F8EF0; --v-bun:#34B062; --v-rec:#F0B90B; --v-ban:#E5534B; --v-tal:#8A9096; }
+[data-z] { transition: opacity .25s, fill .25s; }
+.rack.hl[data-t="alm"] { fill: var(--v-alm); } .rack.hl[data-t="bun"] { fill: var(--v-bun); }
+.rack.hl[data-t="rec"] { fill: var(--v-rec); } .rack.hl[data-t="ban"] { fill: var(--v-ban); }
+.rack.hl { animation: pulse 1.4s ease-in-out infinite; }
+.zone.hl[data-t="alm"] { fill: color-mix(in srgb, var(--v-alm) 40%, var(--z-alm)); }
+.zone.hl[data-t="bun"] { fill: color-mix(in srgb, var(--v-bun) 40%, var(--z-bun)); }
+.zone.hl[data-t="rec"] { fill: color-mix(in srgb, var(--v-rec) 40%, var(--z-rec)); }
+.zone.hl[data-t="ban"] { fill: color-mix(in srgb, var(--v-ban) 40%, var(--z-ban)); }
+.zone.hl { animation: pulse 1.4s ease-in-out infinite; }
+.pk.hl[data-t="alm"] .halo { fill: var(--v-alm); } .pk.hl[data-t="bun"] .halo { fill: var(--v-bun); }
+.pk.hl .halo { animation: pulse 1.4s ease-in-out infinite; }
+.pas.hl circle { fill: var(--v-alm); }
+.pas.hl text { fill: #FFFFFF; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) { .hl, .pk.hl .halo { animation: none !important; } }
+
+/* Buscador */
+.search { position: relative; }
+.search input {
+  width: 100%; background: var(--surface); border: 2px solid #3F8EF0; border-radius: 12px;
+  box-shadow: 0 0 0 4px color-mix(in srgb, #3F8EF0 18%, transparent), 0 2px 10px color-mix(in srgb, #3F8EF0 22%, transparent);
+  padding: 13px 44px 13px 14px; font: 600 1.05rem var(--font);
+}
+.search input:focus { outline: none; border-color: #2F7BE0; box-shadow: 0 0 0 5px color-mix(in srgb, #3F8EF0 30%, transparent), 0 2px 14px color-mix(in srgb, #3F8EF0 30%, transparent); }
+.clear { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border: none; border-radius: 8px; background: none; color: var(--muted); font-size: 1.2rem; cursor: pointer; }
+.list { display: grid; gap: 6px; }
 .item {
-  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
-  padding: 14px 16px 14px 8px; display: grid; grid-template-columns: auto 1fr auto; gap: 2px 10px; align-items: center;
+  display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 11px 13px;
+  font: inherit; color: inherit; text-align: left; cursor: pointer;
 }
-.item.dragging { position: relative; z-index: 5; box-shadow: 0 10px 28px rgba(10, 14, 20, .25); border-color: var(--accent); }
-.grip { grid-row: 1 / span 2; grid-column: 1; background: none; border: none; color: var(--muted); padding: 10px 6px; touch-action: none; cursor: grab; }
-.grip svg { width: 10px; height: 16px; display: block; }
-.grip:active { cursor: grabbing; color: var(--accent); }
-.item-name, .item-spec { grid-column: 2; }
-.actions { display: flex; gap: 14px; }
-.remove { background: none; border: none; color: var(--muted); font-size: .82rem; text-decoration: underline; text-underline-offset: 3px; padding: 0; }
-.remove:hover, .remove.armed { color: var(--dear); }
-.item-name { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
-.item-spec { font: 400 .78rem var(--font-data); color: var(--muted); }
-.item-when { grid-row: 1 / span 2; grid-column: 3; text-align: right; }
-.time { font: 800 1.9rem/1 var(--font-display); color: var(--cheap); font-variant-numeric: tabular-nums; }
-.time.now { color: var(--cheap); }
-.when-sub { font: 400 .78rem var(--font-data); color: var(--muted); }
-.item-foot { grid-column: 1 / -1; display: flex; justify-content: space-between; gap: 10px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); font-size: .85rem; color: var(--muted); }
-.item-foot b { color: var(--ink); font-weight: 600; font-family: var(--font-data); }
-.edit { background: none; border: none; color: var(--muted); font-size: .82rem; text-decoration: underline; text-underline-offset: 3px; padding: 0; }
-.edit:hover { color: var(--accent); }
-.empty { color: var(--muted); font-size: .9rem; text-align: center; padding: 16px; border: 1px dashed var(--line); border-radius: 12px; }
-
-form { display: grid; gap: 12px; }
-dialog { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); padding: 18px; width: min(440px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; }
-dialog::backdrop { background: rgba(10, 14, 20, .55); }
-.addbtn { background: none; border: 1.5px dashed var(--line); border-radius: 12px; padding: 12px; color: var(--accent); font-weight: 600; }
-.addbtn:hover { border-color: var(--accent); }
-.dlg-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.dlg-actions .spacer { flex: 1; }
-.cancel { background: none; border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; }
-form h2 { font: 700 1.05rem var(--font-display); margin: 0; }
-.fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.fields .full { grid-column: 1 / -1; }
-label { display: grid; gap: 4px; font-size: .8rem; color: var(--muted); }
-input, select { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; width: 100%; min-width: 0; }
-.hint { font-size: .75rem; color: var(--muted); }
-.add { background: var(--accent); color: var(--surface); border: none; border-radius: 8px; padding: 10px 18px; font-weight: 600; }
-.add:hover { filter: brightness(1.08); }
-.formerr { color: var(--dear); font-size: .85rem; }
-footer { font-size: .76rem; color: var(--muted); }
-footer a { color: inherit; }
+.item:hover { border-color: var(--ink); }
+.item.sel { border-color: var(--hl); box-shadow: 0 0 0 2px color-mix(in srgb, var(--hl) 45%, transparent); }
+.item b { font-weight: 700; display: block; }
+.item .ref { display: block; color: var(--muted); font-size: .78rem; font-variant-numeric: tabular-nums; margin-top: 1px; }
+.item .ref:empty { display: none; }
+.item small { color: var(--muted); font-size: .8rem; text-align: right; flex: none; max-width: 52%; }
+.empty { color: var(--muted); font-size: .9rem; padding: 6px 2px; }
+.where { display: flex; gap: 12px; align-items: center; background: color-mix(in srgb, var(--hl) 16%, var(--surface)); border: 1px solid color-mix(in srgb, var(--hl) 55%, transparent); border-radius: 12px; padding: 12px 14px; }
+.where .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--hl); flex: none; }
+.where .what { font: 800 1.05rem var(--font); }
+.where .loc { color: var(--hl-ink); font-weight: 600; font-size: .92rem; }
+:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
 </style>
+
 </head>
 <body>
 <div class="wrap">
-  <div class="titlebar"><h1>Luz a su hora</h1><span class="date" id="todayDate"></span></div>
+  <header>
+    <h1>Buscador del almacén</h1>
+    <div class="sub">Escribe el nombre o la referencia y se iluminará su sitio en el plano.</div>
+  </header>
 
-  <section class="now" id="now" hidden>
-    <div class="now-line">
-      <span class="price"><span id="nowPrice">–</span><small>€/kWh</small></span>
-      <span class="tag" id="nowTag"></span>
-    </div>
-    <div class="extremes">
-      <div class="ext lo"><span class="ext-label">Más barata</span><span class="ext-time" id="loTime">–</span><span class="ext-price" id="loPrice"></span></div>
-      <div class="ext hi"><span class="ext-label">Más cara</span><span class="ext-time" id="hiTime">–</span><span class="ext-price" id="hiPrice"></span></div>
-    </div>
-    <div class="sub" id="nowSub"></div>
-  </section>
+  <div class="card map"><svg id="plan" viewBox="-0.6 -0.6 31.2 31.2" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Plano del almacén"><polygon id="zone-ALMACÉN" class="zone t-alm" data-z="ALMACÉN" data-t="alm" points="7,0 20,0 20,24 0,24 0,7.1"/><polygon id="zone-RECEPCIÓN" class="zone t-rec" data-z="RECEPCIÓN" data-t="rec" points="20,0 30,0 30,8.4 20,8.4"/><polygon id="zone-TALLER" class="zone t-tal" data-z="TALLER" data-t="tal" points="20,8.4 30,8.4 30,24 20,24"/><polygon id="zone-B1" class="zone t-bun" data-z="B1" data-t="bun" points="21.7,24 30,24 30,30 21.7,30"/><polygon id="zone-B2" class="zone t-bun" data-z="B2" data-t="bun" points="15.2,24 21.7,24 21.7,30 15.2,30"/><polygon id="zone-B3" class="zone t-bun" data-z="B3" data-t="bun" points="5.1,24 15.2,24 15.2,30 5.1,30"/><polygon id="zone-BAÑO" class="zone t-ban" data-z="BAÑO" data-t="ban" points="0,24 5.1,24 5.1,30 0,30"/><line class="wall-in" x1="20" y1="0" x2="20" y2="24"/><line class="wall-in" x1="20" y1="8.4" x2="30" y2="8.4"/><line class="wall-in" x1="0" y1="24" x2="30" y2="24"/><line class="wall-in" x1="5.1" y1="24" x2="5.1" y2="30"/><line class="div" x1="15.2" y1="24" x2="15.2" y2="30"/><line class="div" x1="21.7" y1="24" x2="21.7" y2="30"/><rect id="izq-C" class="rack" data-z="ALMACÉN" data-t="alm" x="0.2" y="7.5" width="2.5" height="4.333"/><text dy=".36em" class="sec" data-z="ALMACÉN" data-t="alm" x="1.45" y="9.667">C</text><rect id="izq-B" class="rack" data-z="ALMACÉN" data-t="alm" x="0.2" y="11.833" width="2.5" height="4.333"/><text dy=".36em" class="sec" data-z="ALMACÉN" data-t="alm" x="1.45" y="14">B</text><rect id="izq-A" class="rack" data-z="ALMACÉN" data-t="alm" x="0.2" y="16.167" width="2.5" height="4.333"/><text dy=".36em" class="sec" data-z="ALMACÉN" data-t="alm" x="1.45" y="18.333">A</text><line class="secdiv" x1="0.2" y1="11.833" x2="2.7" y2="11.833"/><line class="secdiv" x1="0.2" y1="16.167" x2="2.7" y2="16.167"/><rect id="d1-D" class="rack" data-z="ALMACÉN" data-t="alm" x="5.3" y="7.5" width="2.7" height="4.125"/><text dy=".36em" class="sec" data-z="ALMACÉN" data-t="alm" x="6.65" y="9.562">D</text><rect id="d1-C" class="rack" data-z="ALMACÉN" data-t="alm" x="5.3" y="11.625" width="2.7" height="4.125"/><text dy=".36em" class="sec" data-z="ALMACÉN" data-t="alm" x="6.65" y="13.688">C</text><rect id="d1-B" class="rack" data-z="ALMACÉN" data-t="alm" x="5.3" y="15.75" width="2.7" height="4.125"/><text dy=".36em" class="sec" data-z="ALMACÉN" data-t="alm" x="6.65" y="17.812">B</text><rect id="d1-A" class="rack" data-z="ALMACÉN" data-t="alm" x="5.3" y="19.875" width="2.7" height="4.125"/><text dy=".36em" class="sec" data-z="ALMACÉN" data-t="alm" x="6.65" y="21.938">A</text><line class="secdiv" x1="5.3" y1="11.625" x2="8" y2="11.625"/><line class="secdiv" x1="5.3" y1="15.75" x2="8" y2="15.75"/><line class="secdiv" x1="5.3" y1="19.875" x2="8" y2="19.875"/><rect id="d2-D" class="rack" data-z="ALMACÉN" data-t="alm" x="8" y="7.5" width="2.7" height="4.125"/><text dy=".36em" class="sec" data-z="ALMACÉN" data-t="alm" x="9.35" y="9.562">D</text><rect id="d2-C" class="rack" data-z="ALMACÉN" data-t="alm" x="8" y="11.625" width="2.7" height="4.125"/><text dy=".36em" class="sec" data-z="ALMACÉN" data-t="alm" x="9.35" y="13.688">C</text><rect id="d2-B" class="rack" data-z="ALMACÉN" data-t="alm" x="8" y="15.75" width="2.7" height="4.125"/><text dy=".36em" class="sec" data-z="ALMACÉN" data-t="alm" x="9.35" y="17.812">B</text><rect id="d2-A" class="rack" data-z="ALMACÉN" data-t="alm" x="8" y="19.875" width="2.7" height="4.125"/><text dy=".36em" class="sec" data-z="ALMACÉN" data-t="alm" x="9.35" y="21.938">A</text><line class="secdiv" x1="8" y1="11.625" x2="10.7" y2="11.625"/><line class="secdiv" x1="8" y1="15.75" x2="10.7" y2="15.75"/><line class="secdiv" x1="8" y1="19.875" x2="10.7" y2="19.875"/><rect id="p2-C" class="rack" data-z="ALMACÉN" data-t="alm" x="13" y="7.5" width="2.5" height="4.333"/><text dy=".36em" class="sec" data-z="ALMACÉN" data-t="alm" x="14.25" y="9.667">C</text><rect id="p2-B" class="rack" data-z="ALMACÉN" data-t="alm" x="13" y="11.833" width="2.5" height="4.333"/><text dy=".36em" class="sec" data-z="ALMACÉN" data-t="alm" x="14.25" y="14">B</text><rect id="p2-A" class="rack" data-z="ALMACÉN" data-t="alm" x="13" y="16.167" width="2.5" height="4.333"/><text dy=".36em" class="sec" data-z="ALMACÉN" data-t="alm" x="14.25" y="18.333">A</text><line class="secdiv" x1="13" y1="11.833" x2="15.5" y2="11.833"/><line class="secdiv" x1="13" y1="16.167" x2="15.5" y2="16.167"/><rect id="p1-C" class="rack" data-z="ALMACÉN" data-t="alm" x="17.5" y="7.5" width="2.5" height="4.333"/><text dy=".36em" class="sec" data-z="ALMACÉN" data-t="alm" x="18.75" y="9.667">C</text><rect id="p1-B" class="rack" data-z="ALMACÉN" data-t="alm" x="17.5" y="11.833" width="2.5" height="4.333"/><text dy=".36em" class="sec" data-z="ALMACÉN" data-t="alm" x="18.75" y="14">B</text><rect id="p1-A" class="rack" data-z="ALMACÉN" data-t="alm" x="17.5" y="16.167" width="2.5" height="4.333"/><text dy=".36em" class="sec" data-z="ALMACÉN" data-t="alm" x="18.75" y="18.333">A</text><line class="secdiv" x1="17.5" y1="11.833" x2="20" y2="11.833"/><line class="secdiv" x1="17.5" y1="16.167" x2="20" y2="16.167"/><polygon id="diag-D" class="rack" data-z="ALMACÉN" data-t="alm" points="1.477,5.604 4.24,2.802 6.02,4.558 3.257,7.36"/><text dy=".36em" class="sec" data-z="ALMACÉN" data-t="alm" x="3.749" y="5.081">D</text><polygon id="diag-E" class="rack" data-z="ALMACÉN" data-t="alm" points="4.24,2.802 7.003,0 8.783,1.756 6.02,4.558"/><text dy=".36em" class="sec" data-z="ALMACÉN" data-t="alm" x="6.511" y="2.279">E</text><line class="secdiv" x1="4.24" y1="2.802" x2="6.02" y2="4.558"/><rect id="B3-3" class="rack" data-z="B3" data-t="bun" x="5.1" y="24" width="1.1" height="3"/><text dy=".36em" class="sec" data-z="B3" data-t="bun" x="5.65" y="25.5">3</text><rect id="B3-4" class="rack" data-z="B3" data-t="bun" x="5.1" y="27" width="1.1" height="3"/><text dy=".36em" class="sec" data-z="B3" data-t="bun" x="5.65" y="28.5">4</text><line class="secdiv" x1="5.1" y1="27" x2="6.2" y2="27"/><rect id="B3-2" class="rack" data-z="B3" data-t="bun" x="6.2" y="24" width="3.95" height="1.1"/><text dy=".36em" class="sec" data-z="B3" data-t="bun" x="8.175" y="24.55">2</text><rect id="B3-1" class="rack" data-z="B3" data-t="bun" x="10.15" y="24" width="3.95" height="1.1"/><text dy=".36em" class="sec" data-z="B3" data-t="bun" x="12.125" y="24.55">1</text><line class="secdiv" x1="10.15" y1="24" x2="10.15" y2="25.1"/><rect id="B3-5" class="rack" data-z="B3" data-t="bun" x="6.2" y="28.9" width="3.95" height="1.1"/><text dy=".36em" class="sec" data-z="B3" data-t="bun" x="8.175" y="29.45">5</text><rect id="B3-6" class="rack" data-z="B3" data-t="bun" x="10.15" y="28.9" width="3.95" height="1.1"/><text dy=".36em" class="sec" data-z="B3" data-t="bun" x="12.125" y="29.45">6</text><line class="secdiv" x1="10.15" y1="28.9" x2="10.15" y2="30"/><rect id="B3-7" class="rack" data-z="B3" data-t="bun" x="14.1" y="26.4" width="1.1" height="3.6"/><text dy=".36em" class="sec" data-z="B3" data-t="bun" x="14.65" y="28.2">7</text><rect id="B3-10" class="rack" data-z="B3" data-t="bun" x="7.45" y="27.025" width="2.7" height="1.1"/><text dy=".36em" class="sec" data-z="B3" data-t="bun" x="8.8" y="27.575">10</text><rect id="B3-11" class="rack" data-z="B3" data-t="bun" x="10.15" y="27.025" width="2.7" height="1.1"/><text dy=".36em" class="sec" data-z="B3" data-t="bun" x="11.5" y="27.575">11</text><line class="secdiv" x1="10.15" y1="27.025" x2="10.15" y2="28.125"/><rect id="B3-9" class="rack" data-z="B3" data-t="bun" x="7.45" y="25.875" width="2.7" height="1.1"/><text dy=".36em" class="sec" data-z="B3" data-t="bun" x="8.8" y="26.425">9</text><rect id="B3-8" class="rack" data-z="B3" data-t="bun" x="10.15" y="25.875" width="2.7" height="1.1"/><text dy=".36em" class="sec" data-z="B3" data-t="bun" x="11.5" y="26.425">8</text><line class="secdiv" x1="10.15" y1="25.875" x2="10.15" y2="26.975"/><rect id="B2-1" class="rack" data-z="B2" data-t="bun" x="15.5" y="24" width="4.2" height="1.1"/><text dy=".36em" class="sec" data-z="B2" data-t="bun" x="17.6" y="24.55">1</text><rect id="B2-2" class="rack" data-z="B2" data-t="bun" x="15.2" y="26.4" width="1.1" height="3.6"/><text dy=".36em" class="sec" data-z="B2" data-t="bun" x="15.75" y="28.2">2</text><rect id="B2-3" class="rack" data-z="B2" data-t="bun" x="16.3" y="28.9" width="5.4" height="1.1"/><text dy=".36em" class="sec" data-z="B2" data-t="bun" x="19" y="29.45">3</text><rect id="B2-4" class="rack" data-z="B2" data-t="bun" x="17.7" y="26.45" width="4" height="1.1"/><text dy=".36em" class="sec" data-z="B2" data-t="bun" x="19.7" y="27">4</text><rect id="B1-3" class="rack" data-z="B1" data-t="bun" x="21.7" y="24" width="3.4" height="1.1"/><text dy=".36em" class="sec" data-z="B1" data-t="bun" x="23.4" y="24.55">3</text><rect id="B1-2" class="rack" data-z="B1" data-t="bun" x="27" y="24" width="3" height="1.1"/><text dy=".36em" class="sec" data-z="B1" data-t="bun" x="28.5" y="24.55">2</text><rect id="B1-1" class="rack" data-z="B1" data-t="bun" x="28.9" y="25.1" width="1.1" height="3.4"/><text dy=".36em" class="sec" data-z="B1" data-t="bun" x="29.45" y="26.8">1</text><line class="gap" x1="20" y1="3.2" x2="20" y2="4.2"/><line class="door" x1="20" y1="3.2" x2="19" y2="3.2"/><path class="arc" d="M20 4.2 A1 1 0 0 1 19 3.2"/><line class="gap" x1="29.6" y1="8.4" x2="28.6" y2="8.4"/><line class="door" x1="29.6" y1="8.4" x2="29.6" y2="9.4"/><path class="arc" d="M28.6 8.4 A1 1 0 0 0 29.6 9.4"/><line class="gap" x1="20" y1="21.05" x2="20" y2="22.05"/><line class="door" x1="20" y1="21.05" x2="19" y2="21.05"/><path class="arc" d="M20 22.05 A1 1 0 0 1 19 21.05"/><line class="gap" x1="20" y1="23.05" x2="20" y2="22.05"/><line class="door" x1="20" y1="23.05" x2="19" y2="23.05"/><path class="arc" d="M20 22.05 A1 1 0 0 0 19 23.05"/><line class="gap" x1="1.2" y1="24" x2="2.2" y2="24"/><line class="door" x1="1.2" y1="24" x2="1.2" y2="23"/><path class="arc" d="M2.2 24 A1 1 0 0 0 1.2 23"/><line class="gap" x1="26.1" y1="24" x2="25.1" y2="24"/><line class="door" x1="26.1" y1="24" x2="26.1" y2="25"/><path class="arc" d="M25.1 24 A1 1 0 0 0 26.1 25"/><rect class="stairs" x="20.2" y="4.7" width="1.7" height="3.7"/><line class="step" x1="20.2" y1="5.317" x2="21.9" y2="5.317"/><line class="step" x1="20.2" y1="5.933" x2="21.9" y2="5.933"/><line class="step" x1="20.2" y1="6.55" x2="21.9" y2="6.55"/><line class="step" x1="20.2" y1="7.167" x2="21.9" y2="7.167"/><line class="step" x1="20.2" y1="7.783" x2="21.9" y2="7.783"/><g id="pk-p2-C" class="pk" data-z="ALMACÉN" data-t="alm"><rect class="halo" x="12.88" y="6.93" width="2.74" height="0.69" rx=".18"/><line class="hook" x1="13.156" y1="7.5" x2="13.156" y2="7.3"/><circle class="hookdot" cx="13.156" cy="7.3" r=".055"/><line class="hook" x1="13.469" y1="7.5" x2="13.469" y2="7.3"/><circle class="hookdot" cx="13.469" cy="7.3" r=".055"/><line class="hook" x1="13.781" y1="7.5" x2="13.781" y2="7.3"/><circle class="hookdot" cx="13.781" cy="7.3" r=".055"/><line class="hook" x1="14.094" y1="7.5" x2="14.094" y2="7.3"/><circle class="hookdot" cx="14.094" cy="7.3" r=".055"/><line class="hook" x1="14.406" y1="7.5" x2="14.406" y2="7.3"/><circle class="hookdot" cx="14.406" cy="7.3" r=".055"/><line class="hook" x1="14.719" y1="7.5" x2="14.719" y2="7.3"/><circle class="hookdot" cx="14.719" cy="7.3" r=".055"/><line class="hook" x1="15.031" y1="7.5" x2="15.031" y2="7.3"/><circle class="hookdot" cx="15.031" cy="7.3" r=".055"/><line class="hook" x1="15.344" y1="7.5" x2="15.344" y2="7.3"/><circle class="hookdot" cx="15.344" cy="7.3" r=".055"/></g><g id="pk-p1-C" class="pk" data-z="ALMACÉN" data-t="alm"><rect class="halo" x="17.38" y="6.93" width="2.74" height="0.69" rx=".18"/><line class="hook" x1="17.656" y1="7.5" x2="17.656" y2="7.3"/><circle class="hookdot" cx="17.656" cy="7.3" r=".055"/><line class="hook" x1="17.969" y1="7.5" x2="17.969" y2="7.3"/><circle class="hookdot" cx="17.969" cy="7.3" r=".055"/><line class="hook" x1="18.281" y1="7.5" x2="18.281" y2="7.3"/><circle class="hookdot" cx="18.281" cy="7.3" r=".055"/><line class="hook" x1="18.594" y1="7.5" x2="18.594" y2="7.3"/><circle class="hookdot" cx="18.594" cy="7.3" r=".055"/><line class="hook" x1="18.906" y1="7.5" x2="18.906" y2="7.3"/><circle class="hookdot" cx="18.906" cy="7.3" r=".055"/><line class="hook" x1="19.219" y1="7.5" x2="19.219" y2="7.3"/><circle class="hookdot" cx="19.219" cy="7.3" r=".055"/><line class="hook" x1="19.531" y1="7.5" x2="19.531" y2="7.3"/><circle class="hookdot" cx="19.531" cy="7.3" r=".055"/><line class="hook" x1="19.844" y1="7.5" x2="19.844" y2="7.3"/><circle class="hookdot" cx="19.844" cy="7.3" r=".055"/></g><g id="pk-p2-A" class="pk" data-z="ALMACÉN" data-t="alm"><rect class="halo" x="12.88" y="20.38" width="2.74" height="0.69" rx=".18"/><line class="hook" x1="13.156" y1="20.5" x2="13.156" y2="20.7"/><circle class="hookdot" cx="13.156" cy="20.7" r=".055"/><line class="hook" x1="13.469" y1="20.5" x2="13.469" y2="20.7"/><circle class="hookdot" cx="13.469" cy="20.7" r=".055"/><line class="hook" x1="13.781" y1="20.5" x2="13.781" y2="20.7"/><circle class="hookdot" cx="13.781" cy="20.7" r=".055"/><line class="hook" x1="14.094" y1="20.5" x2="14.094" y2="20.7"/><circle class="hookdot" cx="14.094" cy="20.7" r=".055"/><line class="hook" x1="14.406" y1="20.5" x2="14.406" y2="20.7"/><circle class="hookdot" cx="14.406" cy="20.7" r=".055"/><line class="hook" x1="14.719" y1="20.5" x2="14.719" y2="20.7"/><circle class="hookdot" cx="14.719" cy="20.7" r=".055"/><line class="hook" x1="15.031" y1="20.5" x2="15.031" y2="20.7"/><circle class="hookdot" cx="15.031" cy="20.7" r=".055"/><line class="hook" x1="15.344" y1="20.5" x2="15.344" y2="20.7"/><circle class="hookdot" cx="15.344" cy="20.7" r=".055"/></g><g id="pk-p1-A" class="pk" data-z="ALMACÉN" data-t="alm"><rect class="halo" x="17.38" y="20.38" width="2.74" height="0.69" rx=".18"/><line class="hook" x1="17.656" y1="20.5" x2="17.656" y2="20.7"/><circle class="hookdot" cx="17.656" cy="20.7" r=".055"/><line class="hook" x1="17.969" y1="20.5" x2="17.969" y2="20.7"/><circle class="hookdot" cx="17.969" cy="20.7" r=".055"/><line class="hook" x1="18.281" y1="20.5" x2="18.281" y2="20.7"/><circle class="hookdot" cx="18.281" cy="20.7" r=".055"/><line class="hook" x1="18.594" y1="20.5" x2="18.594" y2="20.7"/><circle class="hookdot" cx="18.594" cy="20.7" r=".055"/><line class="hook" x1="18.906" y1="20.5" x2="18.906" y2="20.7"/><circle class="hookdot" cx="18.906" cy="20.7" r=".055"/><line class="hook" x1="19.219" y1="20.5" x2="19.219" y2="20.7"/><circle class="hookdot" cx="19.219" cy="20.7" r=".055"/><line class="hook" x1="19.531" y1="20.5" x2="19.531" y2="20.7"/><circle class="hookdot" cx="19.531" cy="20.7" r=".055"/><line class="hook" x1="19.844" y1="20.5" x2="19.844" y2="20.7"/><circle class="hookdot" cx="19.844" cy="20.7" r=".055"/></g><g id="pk-B2" class="pk" data-z="B2" data-t="bun"><rect class="halo" x="21.13" y="23.88" width="0.69" height="1.34" rx=".18"/><line class="hook" x1="21.7" y1="24.183" x2="21.5" y2="24.183"/><circle class="hookdot" cx="21.5" cy="24.183" r=".055"/><line class="hook" x1="21.7" y1="24.55" x2="21.5" y2="24.55"/><circle class="hookdot" cx="21.5" cy="24.55" r=".055"/><line class="hook" x1="21.7" y1="24.917" x2="21.5" y2="24.917"/><circle class="hookdot" cx="21.5" cy="24.917" r=".055"/></g><g id="pk-B1" class="pk" data-z="B1" data-t="bun"><rect class="halo" x="26.43" y="23.88" width="0.69" height="1.34" rx=".18"/><line class="hook" x1="27" y1="24.183" x2="26.8" y2="24.183"/><circle class="hookdot" cx="26.8" cy="24.183" r=".055"/><line class="hook" x1="27" y1="24.55" x2="26.8" y2="24.55"/><circle class="hookdot" cx="26.8" cy="24.55" r=".055"/><line class="hook" x1="27" y1="24.917" x2="26.8" y2="24.917"/><circle class="hookdot" cx="26.8" cy="24.917" r=".055"/></g><g id="pk-pared" class="pk" data-z="ALMACÉN" data-t="alm"><rect class="halo" x="15.08" y="23.33" width="4.34" height="0.69" rx=".18"/><line class="hook" x1="15.358" y1="23.9" x2="15.358" y2="23.7"/><circle class="hookdot" cx="15.358" cy="23.7" r=".055"/><line class="hook" x1="15.673" y1="23.9" x2="15.673" y2="23.7"/><circle class="hookdot" cx="15.673" cy="23.7" r=".055"/><line class="hook" x1="15.988" y1="23.9" x2="15.988" y2="23.7"/><circle class="hookdot" cx="15.988" cy="23.7" r=".055"/><line class="hook" x1="16.304" y1="23.9" x2="16.304" y2="23.7"/><circle class="hookdot" cx="16.304" cy="23.7" r=".055"/><line class="hook" x1="16.619" y1="23.9" x2="16.619" y2="23.7"/><circle class="hookdot" cx="16.619" cy="23.7" r=".055"/><line class="hook" x1="16.935" y1="23.9" x2="16.935" y2="23.7"/><circle class="hookdot" cx="16.935" cy="23.7" r=".055"/><line class="hook" x1="17.25" y1="23.9" x2="17.25" y2="23.7"/><circle class="hookdot" cx="17.25" cy="23.7" r=".055"/><line class="hook" x1="17.565" y1="23.9" x2="17.565" y2="23.7"/><circle class="hookdot" cx="17.565" cy="23.7" r=".055"/><line class="hook" x1="17.881" y1="23.9" x2="17.881" y2="23.7"/><circle class="hookdot" cx="17.881" cy="23.7" r=".055"/><line class="hook" x1="18.196" y1="23.9" x2="18.196" y2="23.7"/><circle class="hookdot" cx="18.196" cy="23.7" r=".055"/><line class="hook" x1="18.512" y1="23.9" x2="18.512" y2="23.7"/><circle class="hookdot" cx="18.512" cy="23.7" r=".055"/><line class="hook" x1="18.827" y1="23.9" x2="18.827" y2="23.7"/><circle class="hookdot" cx="18.827" cy="23.7" r=".055"/><line class="hook" x1="19.142" y1="23.9" x2="19.142" y2="23.7"/><circle class="hookdot" cx="19.142" cy="23.7" r=".055"/></g><g id="pk-escalera" class="pk" data-z="ALMACÉN" data-t="alm"><rect class="halo" x="19.33" y="4.38" width="0.69" height="2.94" rx=".18"/><line class="hook" x1="19.9" y1="4.669" x2="19.7" y2="4.669"/><circle class="hookdot" cx="19.7" cy="4.669" r=".055"/><line class="hook" x1="19.9" y1="5.006" x2="19.7" y2="5.006"/><circle class="hookdot" cx="19.7" cy="5.006" r=".055"/><line class="hook" x1="19.9" y1="5.344" x2="19.7" y2="5.344"/><circle class="hookdot" cx="19.7" cy="5.344" r=".055"/><line class="hook" x1="19.9" y1="5.681" x2="19.7" y2="5.681"/><circle class="hookdot" cx="19.7" cy="5.681" r=".055"/><line class="hook" x1="19.9" y1="6.019" x2="19.7" y2="6.019"/><circle class="hookdot" cx="19.7" cy="6.019" r=".055"/><line class="hook" x1="19.9" y1="6.356" x2="19.7" y2="6.356"/><circle class="hookdot" cx="19.7" cy="6.356" r=".055"/><line class="hook" x1="19.9" y1="6.694" x2="19.7" y2="6.694"/><circle class="hookdot" cx="19.7" cy="6.694" r=".055"/><line class="hook" x1="19.9" y1="7.031" x2="19.7" y2="7.031"/><circle class="hookdot" cx="19.7" cy="7.031" r=".055"/></g><g id="pas-6" class="pas" data-z="ALMACÉN" data-t="alm"><circle cx="3.25" cy="14" r=".42"/><text dy=".36em" x="3.25" y="14">6</text></g><g id="pas-5" class="pas" data-z="ALMACÉN" data-t="alm"><circle cx="4.75" cy="14" r=".42"/><text dy=".36em" x="4.75" y="14">5</text></g><g id="pas-4" class="pas" data-z="ALMACÉN" data-t="alm"><circle cx="11.25" cy="14" r=".42"/><text dy=".36em" x="11.25" y="14">4</text></g><g id="pas-3" class="pas" data-z="ALMACÉN" data-t="alm"><circle cx="12.45" cy="14" r=".42"/><text dy=".36em" x="12.45" y="14">3</text></g><g id="pas-2" class="pas" data-z="ALMACÉN" data-t="alm"><circle cx="16.05" cy="14" r=".42"/><text dy=".36em" x="16.05" y="14">2</text></g><g id="pas-1" class="pas" data-z="ALMACÉN" data-t="alm"><circle cx="16.95" cy="14" r=".42"/><text dy=".36em" x="16.95" y="14">1</text></g><polygon class="wall" points="7,0 30,0 30,30 0,30 0,7.1"/><g class="zlabel t-alm" data-z="ALMACÉN" data-t="alm"><rect x="9.83" y="3.15" width="5.34" height="1.2" rx=".2"/><text dy=".36em" x="12.5" y="3.75">ALMACÉN</text></g><g class="zlabel t-rec" data-z="RECEPCIÓN" data-t="rec"><rect x="21.71" y="3.6" width="6.58" height="1.2" rx=".2"/><text dy=".36em" x="25" y="4.2">RECEPCIÓN</text></g><g class="zlabel t-tal" data-z="TALLER" data-t="tal"><rect x="22.64" y="15.6" width="4.72" height="1.2" rx=".2"/><text dy=".36em" x="25" y="16.2">TALLER</text></g><g class="zlabel t-bun" data-z="B1" data-t="bun"><rect x="24.73" y="26.4" width="2.24" height="1.2" rx=".2"/><text dy=".36em" x="25.85" y="27">B1</text></g><g class="zlabel t-bun" data-z="B2" data-t="bun"><rect x="17.93" y="25.1" width="2.24" height="1.2" rx=".2"/><text dy=".36em" x="19.05" y="25.7">B2</text></g><g class="zlabel t-bun" data-z="B3" data-t="bun"><rect x="12.63" y="25.15" width="2.24" height="1.2" rx=".2"/><text dy=".36em" x="13.75" y="25.75">B3</text></g><g class="zlabel t-ban" data-z="BAÑO" data-t="ban"><rect x="0.81" y="26.4" width="3.48" height="1.2" rx=".2"/><text dy=".36em" x="2.55" y="27">BAÑO</text></g></svg></div>
 
-  <section class="chartbox" id="chartbox" hidden>
-    <div class="chart-head">
-      <span class="chart-title">Precio por horas <span class="chart-date" id="chartDate"></span></span>
-      <div class="daytabs" id="daytabs" hidden>
-        <button type="button" id="tabToday" aria-pressed="true">Hoy</button>
-        <button type="button" id="tabTomorrow" aria-pressed="false">Mañana</button>
-      </div>
-      <span class="soon" id="tomorrowSoon" hidden>Mañana: se publica a partir de las 20:15</span>
-    </div>
-    <div class="chart" id="chart"></div>
-    <div class="pick" id="pick">Toca una barra para ver su precio</div>
-  </section>
-  <div class="status" id="status" role="status">Cargando precios…</div>
+  <div class="where" id="where" hidden>
+    <span class="dot"></span>
+    <div><div class="what" id="whereWhat"></div><div class="loc" id="whereLoc"></div></div>
+  </div>
 
-  <section class="list" id="list" aria-live="polite"></section>
-
-  <button class="addbtn" id="openAdd" type="button">+ Añadir aparato</button>
-
-  <dialog id="dlg" aria-labelledby="dlgTitle">
-    <form id="addForm" method="dialog" novalidate>
-      <h2 id="dlgTitle">Añadir aparato</h2>
-      <div class="fields">
-        <label class="full">Nombre
-          <input id="fName" type="text" maxlength="40" placeholder="Secadora" autocomplete="off">
-        </label>
-        <label>Consumo por uso (kWh)
-          <input id="fKwh" type="text" inputmode="decimal" placeholder="1,5">
-        </label>
-        <label>Duración
-          <select id="fMin"></select>
-        </label>
-      </div>
-      <div class="hint">El consumo por uso suele venir en la etiqueta energética (kWh por ciclo). Si solo sabes la potencia: kW × horas.</div>
-      <div class="formerr" id="formErr" role="alert" hidden></div>
-      <div class="dlg-actions">
-        <span class="spacer"></span>
-        <button class="cancel" id="fCancel" type="button">Cancelar</button>
-        <button class="add" id="fSave" type="submit">Añadir</button>
-      </div>
-    </form>
-  </dialog>
-
-  <footer>
-    Precios PVPC de <a href="https://www.ree.es/es/apidatos" target="_blank" rel="noopener">Red Eléctrica</a>, por horas. Solo sirve con la tarifa regulada PVPC. El coste es aproximado.
-  </footer>
+  <div class="search">
+    <input id="q" type="text" enterkeyhint="search" placeholder="Nombre o referencia…" autocomplete="off" aria-label="Buscar producto">
+    <button class="clear" id="clear" type="button" aria-label="Borrar búsqueda" hidden>×</button>
+  </div>
+  <div class="list" id="list" aria-live="polite"></div>
 </div>
 
 <script>
-const TZ = "Europe/Madrid";
-const $ = id => document.getElementById(id);
-const DEFAULTS = [
-  { name: "Lavavajillas", kwh: 1.0, min: 120 },
-  { name: "Lavadora", kwh: 0.9, min: 90 },
-  { name: "Termo", kwh: 3.0, min: 120 },
+// Productos y dónde están. "t" son las piezas del plano que se iluminan.
+const PRODUCTOS = [
+  { n: "Baterías pequeñas", d: "Pasillo 1 · Estantería A", t: ["p1-A", "pas-1"] },
+  { n: "Alimentaciones", d: "Pasillo 1 · Estantería A", t: ["p1-A", "pas-1"] },
+  { n: "NMEA 2000", d: "Pasillo 1 · Estantería B", t: ["p1-B", "pas-1"] },
+  { n: "Rocket", d: "Pasillo 1 · Estantería C", t: ["p1-C", "pas-1"] },
+  { n: "Borika", d: "Pasillo 2 completo y pinchos de las estanterías C (pasillos 1 y 2)", t: ["p2-A", "p2-B", "p2-C", "pk-p2-C", "pk-p1-C", "pas-2"] },
+  { n: "Cables de alimentación normales", d: "Pinchos de la estantería A · Pasillo 2", t: ["pk-p2-A", "pas-2"] },
+  { n: "Cables Ethernet", d: "Pinchos de la estantería A · Pasillo 2", t: ["pk-p2-A", "pas-2"] },
+  { n: "Kits de reparación", d: "Pinchos de la estantería A · Pasillo 2", t: ["pk-p2-A", "pas-2"] },
+  { n: "Pilotos automáticos", d: "Búnker B1 · Estantería 3", t: ["B1-3"] },
+  { n: "Comunicación", d: "Búnker B1 · Estantería 3", t: ["B1-3"] },
+  { n: "Transductores", d: "Búnker B2 · Estanterías 1, 2 y 3", t: ["B2-1", "B2-2", "B2-3"] },
+  { n: "Adaptadores", d: "Pinchos de B2", t: ["pk-B2"] },
+  { n: "Sondas", d: "Búnker B3", t: ["zone-B3"] },
+  // Productos con referencia
+  {"r": "RB", "n": "Contrabase para base inox Rocket", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "rocket canero acero inoxidable"},
+  {"r": "BISR ROCKET", "n": "Base cañero sobre regala estrecha inox Rocket", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "rocket canero acero inoxidable"},
+  {"r": "BIR ROCKET", "n": "Base cañero incrustada estrecha inox Rocket", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "rocket canero acero inoxidable"},
+  {"r": "BSIS ROCKET", "n": "Base cañero sobre regala inox Rocket", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "rocket canero acero inoxidable"},
+  {"r": "BIIS ROCKET", "n": "Base cañero incrustada inox Rocket", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "rocket canero acero inoxidable"},
+  {"r": "BBIG ROCKET", "n": "Base cañero montaje en tubo 27–31 mm inox Rocket", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "rocket canero acero inoxidable"},
+  {"r": "BBIN ROCKET", "n": "Base cañero montaje en tubo 20–27 mm inox Rocket", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "rocket canero acero inoxidable"},
+  {"r": "CBI ROCKET", "n": "Cañero básico Rocket inox", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "rocket canero acero inoxidable"},
+  {"r": "CBA ROCKET", "n": "Cañero básico Rocket aluminio", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "rocket canero acero inoxidable"},
+  {"r": "CAE ROCKET", "n": "Cañero Rocket EVO aluminio", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "rocket canero acero inoxidable"},
+  {"r": "CIE ROCKET", "n": "Cañero Rocket EVO inox", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "rocket canero acero inoxidable"},
+  {"r": "00128", "n": "Cable de alimentación Simrad NSE 2 m", "d": "Pinchos de la estantería A · Pasillo 2", "t": ["pk-p2-A", "pas-2"], "k": "cable", "a": "000-00128-001"},
+  {"r": "000-0127-29", "n": "Cable Ethernet 4,5 m", "d": "Pinchos de la estantería A · Pasillo 2", "t": ["pk-p2-A", "pas-2"], "k": "cable"},
+  {"r": "000-0127-37", "n": "Cable Ethernet 15 m", "d": "Pinchos de la estantería A · Pasillo 2", "t": ["pk-p2-A", "pas-2"], "k": "cable"},
+  {"r": "000-0127-51", "n": "Cable Ethernet 1,8 m", "d": "Pinchos de la estantería A · Pasillo 2", "t": ["pk-p2-A", "pas-2"], "k": "cable"},
+  {"r": "10029", "n": "NEP-2 puerto de expansión de red Ethernet", "d": "Búnker B3 · Estantería 6", "t": ["B3-6"], "k": "nmea 2000", "a": "000-10029-001"},
+  {"r": "10046", "n": "Cable adaptador 7 pines azul a cables pelados", "d": "Pinchos de la estantería A · Pasillo 2", "t": ["pk-p2-A", "pas-2"], "k": "cable", "a": "000-10046-001"},
+  {"r": "10756", "n": "RF25N sensor de timón (feedback) cable Micro-C 5 m", "d": "Búnker B1 · Estantería 3", "t": ["B1-3"], "k": "piloto", "a": "000-10756-001"},
+  {"r": "11047", "n": "Point-1 AP antena GPS / girocompás", "d": "Búnker B1 · Estantería 3", "t": ["B1-3"], "k": "comunicacion gps", "a": "000-11047-002"},
+  {"r": "11517", "n": "Sensor flujo combustible NMEA2000", "d": "Pinchos de la estantería A · Pasillos 2 y 3", "t": ["pk-p2-A", "pas-2", "pas-3"], "k": "sensor", "a": "000-11517-001"},
+  {"r": "11518", "n": "Sensor nivel de fluidos EP-65R NMEA2000", "d": "Pinchos de la estantería A · Pasillos 2 y 3", "t": ["pk-p2-A", "pas-2", "pas-3"], "k": "sensor", "a": "000-11518-001"},
+  {"r": "11522", "n": "Sensor gestión combustible EP-85R NMEA2000", "d": "Pinchos de la estantería A · Pasillos 2 y 3", "t": ["pk-p2-A", "pas-2", "pas-3"], "k": "sensor", "a": "000-11522-001"},
+  {"r": "12316", "n": "WR10 mando inalámbrico piloto + base BT-1", "d": "Búnker B1 · Estantería 3", "t": ["B1-3"], "k": "piloto", "a": "000-12316-001"},
+  {"r": "12568", "n": "Transductor TotalScan Skimmer popa", "d": "Búnker B2 · Estantería 1", "t": ["B2-1"], "k": "transductor", "a": "000-12568-001"},
+  {"r": "12607", "n": "Compás Precision-9", "d": "Búnker B1 · Estantería 3", "t": ["B1-3"], "k": "piloto compas", "a": "000-12607-001"},
+  {"r": "12728", "n": "Transductor 83/200", "a": "000-12728-001", "d": "Búnker B2 · Estantería 1", "t": ["B2-1"], "k": "transductor"},
+  {"r": "13250", "n": "NAC-3 computadora de piloto (alta corriente)", "d": "Búnker B1 · Estantería 3", "t": ["B1-3"], "k": "piloto", "a": "000-13250-001"},
+  {"r": "13291", "n": "Pack piloto NAC-2 AP44 VRF capacidad media", "d": "Búnker B1 · Estantería 3", "t": ["B1-3"], "k": "piloto", "a": "000-13291-002"},
+  {"r": "13249", "n": "NAC-2 unidad de control piloto", "d": "Búnker B1 · Estantería 3", "t": ["B1-3"], "k": "piloto", "a": "000-13249-001"},
+  {"r": "13770", "n": "Transductor popa CHIRP Airmar TM275LH-W 1kW", "d": "Búnker B2 · Estantería 1", "t": ["B2-1"], "k": "transductor", "a": "000-13770-001"},
+  {"r": "13786", "n": "Transductor pasacascos xSonic SS60 600W 20º", "d": "Búnker B2 · Estantería 2", "t": ["B2-2"], "k": "transductor", "a": "000-13786-001"},
+  {"r": "13907", "n": "Transductor pasacascos Airmar B148 HDI xSonic 600W 20º", "d": "Búnker B2 · Estantería 3", "t": ["B2-3"], "k": "transductor", "a": "000-13907-001"},
+  {"r": "13922", "n": "Transductor pasacascos Airmar B150M xSonic 300W 20º", "d": "Búnker B2 · Estantería 3", "t": ["B2-3"], "k": "transductor", "a": "000-13922-001"},
+  {"r": "13942", "n": "Transductor interior Airmar xSonic P79 600W", "d": "Búnker B2 · Estantería 2", "t": ["B2-2"], "k": "transductor", "a": "000-13942-001"},
+  {"r": "13944", "n": "Transductor popa CHIRP Airmar TM150M", "d": "Búnker B2 · Estantería 2", "t": ["B2-2"], "k": "transductor", "a": "000-13944-001"},
+  {"r": "13946", "n": "Transductor pasacascos Airmar B45 bronce xSonic 600W", "d": "Búnker B2 · Estantería 3", "t": ["B2-3"], "k": "transductor", "a": "000-13946-001"},
+  {"r": "14028", "n": "Transductor SplitShot Skimmer Hook2 / Reveal", "d": "Búnker B2 · Estantería 1", "t": ["B2-1"], "k": "transductor", "a": "000-14028-001"},
+  {"r": "14041", "n": "Cable de alimentación 2 hilos HDS / Elite FS / Hook", "d": "Pinchos de la estantería A · Pasillo 2", "t": ["pk-p2-A", "pas-2"], "k": "cable", "a": "000-14041-001"},
+  {"r": "14069", "n": "Adaptador transductor xSonic 9 pines a Hook2 / Hook Reveal", "d": "Pinchos de B2", "t": ["pk-B2"], "k": "adaptador reveal", "a": "000-14069-001"},
+  {"r": "14414", "n": "Cable de extensión 3 m transductor TripleShot / SplitShot", "d": "Pinchos de la estantería A · Pasillo 2", "t": ["pk-p2-A", "pas-2"], "k": "cable", "a": "000-14414-001"},
+  {"r": "14439", "n": "RF40 sensor de timón cable 15 m", "d": "Búnker B1 · Estantería 3", "t": ["B1-3"], "k": "piloto", "a": "000-14439-001"},
+  {"r": "14472", "n": "Link-9 VHF con DSC y receptor AIS", "d": "Búnker B1 · Estantería 3", "t": ["B1-3"], "k": "comunicacion vhf", "a": "000-14472-001"},
+  {"r": "14489", "n": "Transductor Active Imaging 3-1", "d": "Búnker B2 · Estantería 1", "t": ["B2-1"], "k": "transductor", "a": "000-14489-001"},
+  {"r": "14536", "n": "Radar Simrad Halo20+", "d": "Búnker B1 · Estantería 3", "t": ["B1-3"], "k": "radar", "a": "000-14536-001"},
+  {"r": "14537", "n": "Radar Simrad Halo20", "d": "Búnker B1 · Estantería 3", "t": ["B1-3"], "k": "radar", "a": "000-14537-001"},
+  {"r": "14561", "n": "Transductor pasacascos Airmar B285M xSonic 1kW CHIRP", "d": "Búnker B2 · Estantería 3", "t": ["B2-3"], "k": "transductor", "a": "000-14561-001"},
+  {"r": "14839", "n": "Simrad GO7 XSR", "d": "Búnker B3 · Estantería 5", "t": ["B3-5"], "k": "sonda pantalla", "a": "000-14839-001"},
+  {"r": "14841", "n": "Simrad GO9 XSE 3-1", "d": "Búnker B3 · Estantería 5", "t": ["B3-5"], "k": "sonda pantalla", "a": "000-14841-001"},
+  {"r": "14885", "n": "Transductor popa 9 pines 50/200 600W", "d": "Búnker B2 · Estantería 2", "t": ["B2-2"], "k": "transductor", "a": "000-14885-001"},
+  {"r": "15053", "n": "Transductor popa Hook2 / Cruise 83/200", "d": "Búnker B2 · Estantería 1", "t": ["B2-1"], "k": "transductor", "a": "000-15053-001"},
+  {"r": "15237", "n": "Hélice Ghost (antialgas)", "a": "000-15237-001", "d": "Pasillo 3 · Estantería B", "t": ["p2-B", "pas-3"], "k": "helice"},
+  {"r": "15444", "n": "PUMP-2 bomba hidráulica reversible (RPU-80)", "d": "Búnker B1 · Estantería 3", "t": ["B1-3"], "k": "piloto", "a": "000-15444-002"},
+  {"r": "15482", "n": "Transductor popa CHIRP Airmar TM165HW xSonic 600W", "d": "Búnker B2 · Estantería 2", "t": ["B2-2"], "k": "transductor", "a": "000-15482-001"},
+  {"r": "15952", "n": "NAC-1 pack piloto hidráulico fueraborda", "d": "Búnker B1 · Estantería 3", "t": ["B1-3"], "k": "piloto", "a": "000-15952-001"},
+  {"r": "15997", "n": "HDS 9 Pro sin transductor", "d": "Búnker B3 · Estantería 5", "t": ["B3-5"], "k": "sonda pantalla", "a": "000-15997-001"},
+  {"r": "16000", "n": "HDS 10 Pro sin transductor", "d": "Búnker B3 · Estantería 5", "t": ["B3-5"], "k": "sonda pantalla", "a": "000-16000-001"},
+  {"r": "16003", "n": "HDS 12 Pro sin transductor", "d": "Búnker B3 · Estantería 6", "t": ["B3-6"], "k": "sonda pantalla", "a": "000-16003-001"},
+  {"r": "16110", "n": "Eagle 4x con transductor", "d": "Búnker B3 · Estantería 6", "t": ["B3-6"], "k": "sonda pantalla", "a": "000-16110-001"},
+  {"r": "16112", "n": "Eagle 5 SplitShot", "d": "Búnker B3 · Estantería 2", "t": ["B3-2"], "k": "sonda pantalla", "a": "000-16112-001"},
+  {"r": "16121", "n": "Eagle 7 TripleShot", "d": "Búnker B3 · Estantería 2", "t": ["B3-2"], "k": "sonda pantalla", "a": "000-16121-001"},
+  {"r": "16124", "n": "Eagle 9 con transductor HDI 50/200", "d": "Búnker B3 · Estantería 1", "t": ["B3-1"], "k": "sonda pantalla", "a": "000-16124-001"},
+  {"r": "16127", "n": "Eagle 9 TripleShot", "d": "Búnker B3 · Estantería 1", "t": ["B3-1"], "k": "sonda pantalla", "a": "000-16127-001"},
+  {"r": "16203", "n": "Transductor pasacascos Airmar B175M xSonic 1kW 12º", "d": "Búnker B2 · Estantería 3", "t": ["B2-3"], "k": "transductor", "a": "000-16203-001"},
+  {"r": "16205", "n": "Transductor pasacascos Airmar B175M xSonic 1kW 20º", "d": "Búnker B2 · Estantería 3", "t": ["B2-3"], "k": "transductor", "a": "000-16205-001"},
+  {"r": "16307", "n": "Eagle 5 con transductor HDI 83/200", "d": "Búnker B3 · Estantería 2", "t": ["B3-2"], "k": "sonda pantalla", "a": "000-16307-001"},
+  {"r": "16308", "n": "Eagle 7 con transductor HDI 83/200", "d": "Búnker B3 · Estantería 2", "t": ["B3-2"], "k": "sonda pantalla", "a": "000-16308-001"},
+  {"r": "16310", "n": "Eagle 5 con transductor HDI 50/200", "d": "Búnker B3 · Estantería 2", "t": ["B3-2"], "k": "sonda pantalla", "a": "000-16310-001"},
+  {"r": "16311", "n": "Eagle 7 con transductor HDI 50/200", "d": "Búnker B3 · Estantería 2", "t": ["B3-2"], "k": "sonda pantalla", "a": "000-16311-001"},
+  {"r": "16314", "n": "Cable de alimentación Eagle 5 / 7 / 9", "d": "Pinchos de la estantería A · Pasillo 2", "t": ["pk-p2-A", "pas-2"], "k": "cable", "a": "000-16314-001"},
+  {"r": "16366", "n": "Elite FS 9 Black sin transductor", "d": "Búnker B3 · Estanterías 3, 4, 5, 6, 8, 9, 10 y 11", "t": ["B3-3", "B3-4", "B3-5", "B3-6", "B3-8", "B3-9", "B3-10", "B3-11"], "k": "sonda pantalla fs9", "a": "000-16366-001"},
+  {"r": "16437", "n": "Elite FS 10 sin transductor", "a": "000-16437-001", "d": "Búnker B3 · Estanterías 3 y 4", "t": ["B3-3", "B3-4"], "k": "sonda pantalla"},
+  {"r": "16438", "n": "Elite FS 10 Active Imaging 3-1", "a": "000-16438-001", "d": "Búnker B3 · Estanterías 3 y 4", "t": ["B3-3", "B3-4"], "k": "sonda pantalla"},
+  {"r": "16439", "n": "Elite FS 12 sin transductor", "a": "000-16439-001", "d": "Búnker B3 · Estanterías 3 y 4", "t": ["B3-3", "B3-4"], "k": "sonda pantalla"},
+  {"r": "16440", "n": "Elite FS 12 Active Imaging 3-1", "d": "Búnker B3 · Estanterías 3 y 4", "t": ["B3-3", "B3-4"], "k": "sonda pantalla", "a": "000-16440-001"},
+  {"r": "10978", "n": "Soporte transductor Skimmer HDI para motor eléctrico (trolling)", "d": "Ubicación pendiente", "t": [], "k": "adaptador", "a": "000-10978-001"},
+  {"r": "11021", "n": "Soporte gimbal con pomos HDS 12 Gen2 Touch / Gen3", "d": "Ubicación pendiente", "t": [], "k": "soporte recambio", "a": "000-11021-001"},
+  {"r": "13750", "n": "Bisel NSS9 EVO3 / Zeus3", "d": "Ubicación pendiente", "t": [], "k": "bisel recambio", "a": "000-13750-001"},
+  // Lowrance (refs. oficiales ROW)
+  {"r": "16115", "n": "Eagle 7 SplitShot", "d": "Búnker B3 · Estantería 2", "t": ["B3-2"], "k": "sonda pantalla lowrance", "a": "000-16115-001"},
+  {"r": "16130", "n": "Eagle Eye 9 Live", "d": "Búnker B3 · Estantería 1", "t": ["B3-1"], "k": "sonda pantalla lowrance", "a": "000-16130-001"},
+  {"r": "15702", "n": "Elite FS 7 sin transductor", "d": "Búnker B3 · Estantería 2", "t": ["B3-2"], "k": "sonda pantalla lowrance fs7", "a": "000-15702-001"},
+  {"r": "15697", "n": "Elite FS 7 HDI", "d": "Búnker B3 · Estantería 2", "t": ["B3-2"], "k": "sonda pantalla lowrance fs7", "a": "000-15697-001"},
+  {"r": "15689", "n": "Elite FS 7 Active Imaging 3-1", "d": "Búnker B3 · Estantería 2", "t": ["B3-2"], "k": "sonda pantalla lowrance fs7", "a": "000-15689-001"},
+  {"r": "15693", "n": "Elite FS 9 Active Imaging 3-1", "d": "Búnker B3 · Estanterías 3, 4, 5, 6, 8, 9, 10 y 11", "t": ["B3-3", "B3-4", "B3-5", "B3-6", "B3-8", "B3-9", "B3-10", "B3-11"], "k": "sonda pantalla lowrance fs9", "a": "000-15693-001"},
+  {"r": "15982", "n": "HDS 9 Pro + Active Imaging HD 3-1", "d": "Búnker B3 · Estantería 5", "t": ["B3-5"], "k": "sonda pantalla lowrance", "a": "000-15982-001"},
+  {"r": "15985", "n": "HDS 10 Pro + Active Imaging HD 3-1", "d": "Búnker B3 · Estantería 5", "t": ["B3-5"], "k": "sonda pantalla lowrance", "a": "000-15985-001"},
+  {"r": "15988", "n": "HDS 12 Pro + Active Imaging HD 3-1", "d": "Búnker B3 · Estantería 6", "t": ["B3-6"], "k": "sonda pantalla lowrance", "a": "000-15988-001"},
+  {"r": "16006", "n": "HDS 16 Pro", "d": "Ubicación pendiente", "t": [], "k": "sonda pantalla lowrance", "a": "000-16006-001"},
+  {"r": "15991", "n": "HDS 16 Pro + Active Imaging HD 3-1", "d": "Ubicación pendiente", "t": [], "k": "sonda pantalla lowrance", "a": "000-15991-001"},
+  {"r": "16062", "n": "Transductor Active Imaging HD 3-1", "d": "Búnker B2 · Estantería 1", "t": ["B2-1"], "k": "transductor lowrance", "a": "000-16062-001"},
+  {"r": "10260", "n": "Transductor DSI DownScan Skimmer", "d": "Búnker B2 · Estantería 1", "t": ["B2-1"], "k": "transductor lowrance", "a": "000-10260-001"},
+  {"r": "14541", "n": "Radar Lowrance Halo24", "d": "Búnker B1 · Estantería 3", "t": ["B1-3"], "k": "radar lowrance", "a": "000-14541-001"},
+  {"r": "14542", "n": "Radar Lowrance Halo20+", "d": "Búnker B1 · Estantería 3", "t": ["B1-3"], "k": "radar lowrance", "a": "000-14542-001"},
+  {"r": "14543", "n": "Radar Lowrance Halo20", "d": "Búnker B1 · Estantería 3", "t": ["B1-3"], "k": "radar lowrance", "a": "000-14543-001"},
+  // Baterías PoweryMax
+  {"r": "PX5", "n": "Batería litio PoweryMax PX5 + cargador", "d": "Pasillo 1 · Estantería A", "t": ["p1-A", "pas-1"], "k": "bateria powerymax litio gel"},
+  {"r": "PX10", "n": "Batería litio PoweryMax PX10 + cargador", "d": "Pasillo 1 · Estantería A", "t": ["p1-A", "pas-1"], "k": "bateria powerymax litio gel"},
+  {"r": "PX25", "n": "Batería litio PoweryMax PX25 + cargador", "d": "Pasillo 1 · Estantería A", "t": ["p1-A", "pas-1"], "k": "bateria powerymax litio gel"},
+  {"r": "TX50", "n": "Batería litio PoweryMax TX50 + cargador", "d": "Pasillo 1 · Estantería A", "t": ["p1-A", "pas-1"], "k": "bateria powerymax litio gel"},
+  {"r": "AGM 7A", "n": "Batería AGM 12V 7Ah", "d": "Pasillo 1 · Estantería A", "t": ["p1-A", "pas-1"], "k": "bateria powerymax litio gel"},
+  {"r": "TX12100", "n": "Batería litio PoweryMax TX12100 12V 100Ah", "d": "Pasillo 6 · Estantería B", "t": ["izq-B", "pas-6"], "k": "bateria powerymax litio gel"},
+  {"r": "TX24100", "n": "Batería litio PoweryMax TX24100 24V 100Ah", "d": "Pasillo 6 · Estantería A", "t": ["izq-A", "pas-6"], "k": "bateria powerymax litio gel"},
+  {"r": "TX36100", "n": "Batería litio PoweryMax TX36100 36V 100Ah", "d": "Pasillo 6 · Estantería A", "t": ["izq-A", "pas-6"], "k": "bateria powerymax litio gel"},
+  {"r": "TX36200", "n": "Batería litio PoweryMax TX36200 36V 200Ah", "d": "Pasillo 6 · Estantería D", "t": ["diag-D", "pas-6"], "k": "bateria powerymax litio gel"},
+  {"r": "GL12100", "n": "Batería gel PoweryMax GL12100 12V 100Ah", "d": "Pasillo 6 · Estantería A", "t": ["izq-A", "pas-6"], "k": "bateria powerymax litio gel"},
+  {"r": "GL24100", "n": "Batería gel PoweryMax GL24100 24V 100Ah", "d": "Pasillo 6 · Estantería A", "t": ["izq-A", "pas-6"], "k": "bateria powerymax litio gel"},
+  {"r": "GL36100", "n": "Batería gel PoweryMax GL36100 36V 100Ah", "d": "Pasillo 6 · Estantería A", "t": ["izq-A", "pas-6"], "k": "bateria powerymax litio gel"},
+  // NMEA2000 PoweryMax
+  {"r": "POW-0119-75-3", "n": "Portafusibles NMEA2000 3A PoweryMax", "d": "Pasillo 1 · Estantería B", "t": ["p1-B", "pas-1"], "k": "nmea 2000 n2k powerymax"},
+  {"r": "POWN2KCABLE", "n": "Cable de red NMEA2000 por metros PoweryMax", "d": "Pasillo 1 · Estantería B", "t": ["p1-B", "pas-1"], "k": "nmea 2000 n2k powerymax"},
+  {"r": "POW-0119-79", "n": "Conector T NMEA2000 PoweryMax", "d": "Pasillo 1 · Estantería B", "t": ["p1-B", "pas-1"], "k": "nmea 2000 n2k powerymax"},
+  {"r": "POW-33-578-01", "n": "Conector macho NMEA2000 PoweryMax", "d": "Pasillo 1 · Estantería B", "t": ["p1-B", "pas-1"], "k": "nmea 2000 n2k powerymax"},
+  {"r": "POW-33-578-02", "n": "Conector hembra NMEA2000 PoweryMax", "d": "Pasillo 1 · Estantería B", "t": ["p1-B", "pas-1"], "k": "nmea 2000 n2k powerymax"},
+  {"r": "POW-0127-52", "n": "Terminales de resistencia NMEA2000 PoweryMax", "d": "Pasillo 1 · Estantería B", "t": ["p1-B", "pas-1"], "k": "nmea 2000 n2k powerymax"},
+  {"r": "POW-0119-88", "n": "Cable de red NMEA2000 0,6 m PoweryMax", "d": "Pasillo 1 · Estantería B", "t": ["p1-B", "pas-1"], "k": "nmea 2000 n2k powerymax"},
+  {"r": "POW 0127-53", "n": "Cable de red NMEA2000 1,8 m PoweryMax", "d": "Pasillo 1 · Estantería B", "t": ["p1-B", "pas-1"], "k": "nmea 2000 n2k powerymax"},
+  {"r": "POW-0119-86", "n": "Cable de red NMEA2000 4,5 m PoweryMax", "d": "Pasillo 1 · Estantería B", "t": ["p1-B", "pas-1"], "k": "nmea 2000 n2k powerymax"},
+  {"r": "POW-33-578-02-33-578-01", "n": "Kit de conectores NMEA2000 (macho + hembra) PoweryMax", "d": "Pasillo 1 · Estantería B", "t": ["p1-B", "pas-1"], "k": "nmea 2000 n2k powerymax"},
+  {"r": "POW-0119-75-2", "n": "Cable alimentación NMEA2000 conexión directa PoweryMax", "d": "Pasillo 1 · Estantería B", "t": ["p1-B", "pas-1"], "k": "nmea 2000 n2k powerymax"},
+  {"r": "POW-0119-75", "n": "Cable alimentación NMEA2000 PoweryMax", "d": "Pasillo 1 · Estantería B", "t": ["p1-B", "pas-1"], "k": "nmea 2000 n2k powerymax"},
+  {"r": "POW 12259-001", "n": "Conexión T NMEA2000 aislada PoweryMax", "d": "Pasillo 1 · Estantería B", "t": ["p1-B", "pas-1"], "k": "nmea 2000 n2k powerymax"},
+  {"r": "POW-12612-001", "n": "Conector 4 vías NMEA2000 PoweryMax", "d": "Pasillo 1 · Estantería B", "t": ["p1-B", "pas-1"], "k": "nmea 2000 n2k powerymax"},
+  {"r": "POW-0120-37", "n": "Cable interfaz motores Yamaha a NMEA2000 PoweryMax", "d": "Pinchos de la estantería A · Pasillo 1", "t": ["pk-p1-A", "pas-1"], "k": "nmea 2000 n2k powerymax"},
+  {"r": "POW-11481-001", "n": "Cable motor Honda NMEA2000 PoweryMax", "d": "Pinchos de la estantería A · Pasillo 1", "t": ["pk-p1-A", "pas-1"], "k": "nmea 2000 n2k powerymax"},
+  {"r": "POW 10760-001", "n": "Kit básico NMEA2000 1 dispositivo PoweryMax", "d": "Pasillo 1 · Estantería B", "t": ["p1-B", "pas-1"], "k": "nmea 2000 n2k powerymax"},
+  {"r": "POW-36001-88L00", "n": "Kit conexión Suzuki SMG4 a NMEA2000 PoweryMax", "d": "Pinchos de la estantería A · Pasillo 1", "t": ["pk-p1-A", "pas-1"], "k": "nmea 2000 n2k powerymax"},
+  {"r": "POW-0124-69", "n": "Kit básico NMEA2000 2 dispositivos PoweryMax", "d": "Pasillo 1 · Estantería B", "t": ["p1-B", "pas-1"], "k": "nmea 2000 n2k powerymax"},
+  // Tapas protectoras
+  {"r": "16248", "n": "Tapa Eagle 4x", "d": "Pinchos de la estantería A · Pasillo 2", "t": ["pk-p2-A", "pas-2"], "k": "tapa protectora lowrance", "a": "000-16248-001"},
+  {"r": "16249", "n": "Tapa Eagle 5", "d": "Pinchos de la estantería A · Pasillo 2", "t": ["pk-p2-A", "pas-2"], "k": "tapa protectora lowrance", "a": "000-16249-001"},
+  {"r": "16250", "n": "Tapa Eagle 7", "d": "Pinchos de la estantería A · Pasillo 2", "t": ["pk-p2-A", "pas-2"], "k": "tapa protectora lowrance", "a": "000-16250-001"},
+  {"r": "16251", "n": "Tapa Eagle 9 / Eagle Eye", "d": "Pinchos de la estantería A · Pasillo 2", "t": ["pk-p2-A", "pas-2"], "k": "tapa protectora lowrance", "a": "000-16251-001"},
+  {"r": "14174", "n": "Tapa Hook2-5 / Hook Reveal 5", "d": "Pinchos del Búnker B1", "t": ["pk-B1"], "k": "tapa protectora lowrance reveal", "a": "000-14174-001"},
+  {"r": "14175", "n": "Tapa Hook2-7 / Hook Reveal 7", "d": "Pinchos del Búnker B1", "t": ["pk-B1"], "k": "tapa protectora lowrance reveal", "a": "000-14175-001"},
+  {"r": "14176", "n": "Tapa Hook2-9 / Hook Reveal 9", "d": "Pinchos del Búnker B1", "t": ["pk-B1"], "k": "tapa protectora lowrance reveal", "a": "000-14176-001"},
+  {"r": "13748", "n": "Tapa tarjetero Simrad NSS EVO3 / Zeus3", "d": "Pinchos del Búnker B1", "t": ["pk-B1"], "k": "tapa protectora simrad", "a": "000-13748-001"},
+  {"r": "11590", "n": "Tapa Simrad NSS7 EVO2", "d": "Pinchos del Búnker B1", "t": ["pk-B1"], "k": "tapa protectora simrad", "a": "000-11590-001"},
+  {"r": "11592", "n": "Tapa Simrad NSS9 EVO2", "d": "Pinchos del Búnker B1", "t": ["pk-B1"], "k": "tapa protectora simrad", "a": "000-11592-001"},
+  {"r": "13740", "n": "Tapa Simrad NSS7 EVO3", "d": "Pinchos del Búnker B1", "t": ["pk-B1"], "k": "tapa protectora simrad", "a": "000-13740-001"},
+  {"r": "13741", "n": "Tapa Simrad NSS9 EVO3", "d": "Pinchos del Búnker B1", "t": ["pk-B1"], "k": "tapa protectora simrad", "a": "000-13741-001"},
+  {"r": "13742", "n": "Tapa Simrad NSS12 EVO3", "d": "Pinchos del Búnker B1", "t": ["pk-B1"], "k": "tapa protectora simrad", "a": "000-13742-001"},
+  {"r": "13743", "n": "Tapa Simrad NSS16 EVO3", "d": "Pinchos del Búnker B1", "t": ["pk-B1"], "k": "tapa protectora simrad", "a": "000-13743-001"},
+  {"r": "15816", "n": "Tapa Simrad NSX 3007", "d": "Pinchos del Búnker B1", "t": ["pk-B1"], "k": "tapa protectora simrad", "a": "000-15816-001"},
+  {"r": "15817", "n": "Tapa Simrad NSX 3009", "d": "Pinchos del Búnker B1", "t": ["pk-B1"], "k": "tapa protectora simrad", "a": "000-15817-001"},
+  {"r": "15818", "n": "Tapa Simrad NSX 3012", "d": "Pinchos del Búnker B1", "t": ["pk-B1"], "k": "tapa protectora simrad", "a": "000-15818-001"},
+  {"r": "16221", "n": "Tapa Simrad NSX 3015", "d": "Pinchos del Búnker B1", "t": ["pk-B1"], "k": "tapa protectora simrad", "a": "000-16221-001"},
+  {"r": "14227", "n": "Tapa Simrad GO7 XSR", "d": "Pinchos del Búnker B1", "t": ["pk-B1"], "k": "tapa protectora simrad", "a": "000-14227-001"},
+  {"r": "13698", "n": "Tapa Simrad GO9 XSE", "d": "Pinchos del Búnker B1", "t": ["pk-B1"], "k": "tapa protectora simrad", "a": "000-13698-001"},
+  {"r": "14147", "n": "Tapa Simrad GO12", "d": "Pinchos del Búnker B1", "t": ["pk-B1"], "k": "tapa protectora simrad", "a": "000-14147-001"},
+  {"r": "11030", "n": "Tapa HDS-7 / HDS-7m Gen2 Touch", "d": "Pasillo 4 · Estantería A", "t": ["d2-A", "pas-4"], "k": "tapa protectora lowrance", "a": "000-11030-001"},
+  {"r": "0124-61", "n": "Tapa HDS-5 / HDS-5m Gen1 Gen2", "d": "Pasillo 4 · Estantería A", "t": ["d2-A", "pas-4"], "k": "tapa protectora lowrance", "a": "000-0124-61"},
+  {"r": "0124-62", "n": "Tapa HDS-7 / HDS-7m Gen1 Gen2", "d": "Pasillo 4 · Estantería A", "t": ["d2-A", "pas-4"], "k": "tapa protectora lowrance", "a": "000-0124-62"},
+  {"r": "12242", "n": "Tapa HDS 7 Gen3 / Carbon", "d": "Pasillo 4 · Estantería A", "t": ["d2-A", "pas-4"], "k": "tapa protectora lowrance", "a": "000-12242-001"},
+  {"r": "12244", "n": "Tapa HDS 9 Gen3 / Carbon", "d": "Pasillo 4 · Estantería A", "t": ["d2-A", "pas-4"], "k": "tapa protectora lowrance", "a": "000-12244-001"},
+  {"r": "12246", "n": "Tapa HDS 12 Gen3 / Carbon", "d": "Pasillo 4 · Estantería A", "t": ["d2-A", "pas-4"], "k": "tapa protectora lowrance", "a": "000-12246-001"},
+  {"r": "13993", "n": "Tapa HDS-16 Carbon", "d": "Pasillo 4 · Estantería A", "t": ["d2-A", "pas-4"], "k": "tapa protectora lowrance", "a": "000-13993-001"},
+  {"r": "14582", "n": "Tapa HDS 7 Live / Pro", "d": "Pasillo 4 · Estantería A", "t": ["d2-A", "pas-4"], "k": "tapa protectora lowrance", "a": "000-14582-001"},
+  {"r": "14583", "n": "Tapa HDS 9 Live / Pro", "d": "Pasillo 4 · Estantería A", "t": ["d2-A", "pas-4"], "k": "tapa protectora lowrance", "a": "000-14583-001"},
+  {"r": "16059", "n": "Tapa HDS 10 Pro", "d": "Pasillo 4 · Estantería A", "t": ["d2-A", "pas-4"], "k": "tapa protectora lowrance", "a": "000-16059-001"},
+  {"r": "14584", "n": "Tapa HDS 12 Live / Pro", "d": "Pasillo 4 · Estantería A", "t": ["d2-A", "pas-4"], "k": "tapa protectora lowrance", "a": "000-14584-001"},
+  {"r": "13978", "n": "Tapa tarjetero HDS-7 Carbon", "d": "Ubicación pendiente", "t": [], "k": "tapa protectora lowrance", "a": "000-13978-001"},
+  {"r": "13979", "n": "Tapa tarjetero HDS-9 Carbon", "d": "Ubicación pendiente", "t": [], "k": "tapa protectora lowrance", "a": "000-13979-001"},
+  {"r": "14590", "n": "Tapa tarjetero HDS 7 Live", "d": "Ubicación pendiente", "t": [], "k": "tapa protectora lowrance", "a": "000-14590-001"},
+  {"r": "14591", "n": "Tapa tarjetero HDS 9 Live / Pro", "d": "Ubicación pendiente", "t": [], "k": "tapa protectora lowrance", "a": "000-14591-001"},
+  {"r": "14592", "n": "Tapa tarjetero HDS 12 Live / Pro", "d": "Ubicación pendiente", "t": [], "k": "tapa protectora lowrance", "a": "000-14592-001"},
+  {"r": "14593", "n": "Tapa tarjetero HDS 16 Live / Pro", "d": "Ubicación pendiente", "t": [], "k": "tapa protectora lowrance", "a": "000-14593-001"},
+  {"r": "15778", "n": "Tapa Elite FS 7", "d": "Pasillo 4 · Estantería A", "t": ["d2-A", "pas-4"], "k": "tapa protectora lowrance", "a": "000-15778-001"},
+  {"r": "15779", "n": "Tapa Elite FS 9", "d": "Pasillo 4 · Estantería A", "t": ["d2-A", "pas-4"], "k": "tapa protectora lowrance", "a": "000-15779-001"},
+  {"r": "16443", "n": "Tapa Elite FS 10", "d": "Pasillo 4 · Estantería A", "t": ["d2-A", "pas-4"], "k": "tapa protectora lowrance", "a": "000-16443-001"},
+  {"r": "16444", "n": "Tapa Elite FS 12", "d": "Pasillo 4 · Estantería A", "t": ["d2-A", "pas-4"], "k": "tapa protectora lowrance", "a": "000-16444-001"},
+  // Kits de reparación y adaptadores
+  {"r": "POW-D00218H", "n": "Kit reparación transductores PoweryMax", "d": "Pinchos de la estantería A · Pasillo 2", "t": ["pk-p2-A", "pas-2"], "k": "kit reparacion"},
+  {"r": "POW-D00218H-7PINBLUE", "n": "Kit reparación transductor conector azul 7 pines PoweryMax", "d": "Pinchos de la estantería A · Pasillo 2", "t": ["pk-p2-A", "pas-2"], "k": "kit reparacion"},
+  {"r": "POW-D00218H-REV", "n": "Kit reparación transductor Hook Reveal / Hook2 / Cruise PoweryMax", "d": "Pinchos de la estantería A · Pasillo 2", "t": ["pk-p2-A", "pas-2"], "k": "kit reparacion"},
+  {"r": "POW-D00218H-XSONIC", "n": "Kit reparación transductor conector xSonic PoweryMax", "d": "Pinchos de la estantería A · Pasillo 2", "t": ["pk-p2-A", "pas-2"], "k": "kit reparacion"},
+  {"r": "14068", "n": "Adaptador transductor conector azul 7 pines a Hook2 / Hook Reveal", "d": "Pinchos de B2", "t": ["pk-B2"], "k": "adaptador", "a": "000-14068-001"},
+  {"r": "14070", "n": "Adaptador transductor 7 pines azul a Hook2-4x", "d": "Pinchos de B2", "t": ["pk-B2"], "k": "adaptador", "a": "000-14070-001"},
+  {"r": "13313", "n": "Adaptador transductor azul 7 pines a equipo xSonic 9 pines", "d": "Pinchos de B2", "t": ["pk-B2"], "k": "adaptador", "a": "000-13313-001"},
+  {"r": "13977", "n": "Adaptador transductor xSonic XID 9 pines a equipo azul 7 pines", "d": "Pinchos de B2", "t": ["pk-B2"], "k": "adaptador", "a": "000-13977-001"},
+  {"r": "12571", "n": "Adaptador transductor xSonic 9 pines (no XID) a azul 7 pines", "d": "Pinchos de B2", "t": ["pk-B2"], "k": "adaptador", "a": "000-12571-001"},
+  {"r": "10052", "n": "Adaptador transductor Uniplug a conector azul", "d": "Pinchos de B2", "t": ["pk-B2"], "k": "adaptador", "a": "000-10052-001"},
+  {"r": "SPTV10", "n": "Adaptador soporte FT300B-90 / LSP400 / LSP1000 para transductor Eagle Eye", "d": "Pinchos de B2", "t": ["pk-B2"], "k": "adaptador borika"},
+  // Direcciones hidráulicas Hydrodrive
+  {"r": "MF75W", "n": "Dirección hidráulica Hydrodrive MF75W (hasta 75 HP)", "d": "Pasillo 4 · Estantería A", "t": ["d2-A", "pas-4"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "MF115MRA", "n": "Dirección hidráulica Hydrodrive MF115MRA (hasta 120 HP)", "d": "Pasillo 4 · Estantería A", "t": ["d2-A", "pas-4"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "MF175W", "n": "Dirección hidráulica Hydrodrive MF175W (hasta 175 HP)", "d": "Pasillo 4 · Estantería A", "t": ["d2-A", "pas-4"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "MF175WTS", "n": "Dirección hidráulica Hydrodrive MF175WTS (hasta 175 HP)", "d": "Pasillo 4 · Estantería A", "t": ["d2-A", "pas-4"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "MF255WTS", "n": "Dirección hidráulica Hydrodrive MF255WTS (hasta 255 HP)", "d": "Pasillo 4 · Estantería A", "t": ["d2-A", "pas-4"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "MF400WTS", "n": "Dirección hidráulica Hydrodrive MF400WTS (hasta 400 HP)", "d": "Pasillo 4 · Estantería A", "t": ["d2-A", "pas-4"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "MU50TF-MRA", "n": "Dirección hidráulica intraborda Hydrodrive MU50TF-MRA (hasta 10 m)", "d": "Pasillo 4 · Estantería A", "t": ["d2-A", "pas-4"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "MU75TF-MRA", "n": "Dirección hidráulica intraborda Hydrodrive MU75TF-MRA (hasta 12 m)", "d": "Pasillo 4 · Estantería A", "t": ["d2-A", "pas-4"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "MU100TF-MRA", "n": "Dirección hidráulica intraborda Hydrodrive MU100TF-MRA (hasta 14 m)", "d": "Pasillo 4 · Estantería A", "t": ["d2-A", "pas-4"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "MC50", "n": "Cilindro hidráulico Hydrodrive MC50", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "MC75", "n": "Cilindro hidráulico Hydrodrive MC75", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "MC90W", "n": "Cilindro hidráulico Hydrodrive MC90W", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "MC115W", "n": "Cilindro hidráulico Hydrodrive MC115W", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "MC175W", "n": "Cilindro hidráulico Hydrodrive MC175W", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "MC175WTS", "n": "Cilindro hidráulico Hydrodrive MC175WTS", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "MC255WTS", "n": "Cilindro hidráulico Hydrodrive MC255WTS", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "MC350W", "n": "Cilindro hidráulico Hydrodrive MC350W", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "TL1-16", "n": "Bomba dirección hidráulica Hydrodrive TL1-16", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "TL1-16MRA", "n": "Bomba dirección hidráulica Hydrodrive TL1-16MRA", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "TL2-30MRA", "n": "Bomba dirección hidráulica Hydrodrive TL2-30MRA", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "TL2-40SPMRA", "n": "Bomba dirección hidráulica Hydrodrive TL2-40SPMRA", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "16020-VRG 35", "n": "Volante Hydrodrive 5 radios 35 cm gris", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "16020-WRB 35", "n": "Volante Hydrodrive 5 radios 35 cm negro", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "16020-VRW 35", "n": "Volante Hydrodrive 5 radios 35 cm blanco", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "16100-HDS37", "n": "Volante Hydrodrive 5 radios 37 cm inox", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "BR72", "n": "Barra reenvío Hydrodrive para MF90W / MF115MRA", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "BR75", "n": "Barra reenvío Hydrodrive doble motorización BR75", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "BTW62", "n": "Barra Hydrodrive motorización doble BTW62 (540-620 mm)", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "BTW70", "n": "Barra Hydrodrive motorización doble BTW70 (620-700 mm)", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "BTW75", "n": "Barra Hydrodrive motorización doble BTW75 (700-760 mm)", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "HROL", "n": "Aceite hidráulico Hydrodrive", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "500.20.10.14", "n": "Sistema de llenado de aceite TL1 Hydrodrive", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "500.20.10.38", "n": "Sistema de llenado de aceite TL2 Hydrodrive", "d": "Pasillo 1 · Estantería C", "t": ["p1-C", "pas-1"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "RS813AC6-20", "n": "Doble tubería Hydrodrive con racores 6 m", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "RS813AC8-26", "n": "Doble tubería Hydrodrive con racores 8 m", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "RS813EXTAC3-10", "n": "Extensión 3 m tubería Hydrodrive con racores", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "MC-SEALS-50", "n": "Kit reparación Hydrodrive MC50 / MC70 intraborda", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "MC-SEALS-75", "n": "Kit reparación Hydrodrive MC75 intraborda", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "MC-SEALS-90", "n": "Kit reparación Hydrodrive MC75W / MC90W / MC115W", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "MC-SEALS-175", "n": "Kit reparación Hydrodrive MC175W / MC175WTS", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "TL-SEALS-TL1", "n": "Kit reparación bomba Hydrodrive serie TL1", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "TL-SEALS-TL2", "n": "Kit reparación bomba Hydrodrive serie TL2", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "DTN14-10", "n": "Racor recto 1/4-10 mm Hydrodrive", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "DTN-18-8", "n": "Racor 1/8-8 mm Hydrodrive", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "TTN-18-8", "n": "Racor 1/8-8 mm Hydrodrive (TTN)", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "TTN-14-10", "n": "Racor 1/4-10 mm Hydrodrive", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "GTN-18-8", "n": "Racor codo 90º 1/8-8 mm Hydrodrive", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "GTN-14-10", "n": "Racor codo 90º 1/4-10 mm Hydrodrive", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "EXTGTN-14-10", "n": "Racor codo extensión 90º 1/4 Hydrodrive", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "TTN-8", "n": "Racor de 3 vías 8 mm Hydrodrive", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "TTN-10", "n": "Racor de 3 vías 10 mm Hydrodrive", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "724.00.14", "n": "Racor en T con válvula de purga 1/4-10 mm Hydrodrive", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "9460.00.004", "n": "Racor recto prolongación manguera 10 mm (AC516) Hydrodrive", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "AC516", "n": "Racor manguera con casquillo Hydrodrive", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "2080-14-18", "n": "Adaptador 1/4-1/8 Hydrodrive", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "2080-38-14", "n": "Adaptador 3/8-1/4 Hydrodrive", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "025.02.11", "n": "Juego casquillos latón Hydrodrive", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "97.40.00.08", "n": "Casquillo espiga 8 mm Hydrodrive", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "97.40.00", "n": "Casquillo espiga 10 mm Hydrodrive", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "025.02.12", "n": "Anillo ajustable Hydrodrive", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "018.00.06", "n": "Acoplamiento final pistón Hydrodrive MC75 / MC90 / MC115", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "PA-M12", "n": "Arandela espaciadora nylon 2 mm Hydrodrive", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "JAF12", "n": "Rótula MC50 Hydrodrive", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "020.12.50", "n": "Separador inox 12,50 mm Hydrodrive", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "018.00.05", "n": "Tapas cierre laterales cilindro Hydrodrive", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "050.01.07", "n": "Varilla de tubo basculante Hydrodrive", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "KSTM25-SU", "n": "Soporte esférico con placa MC50 Hydrodrive", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "HF6006", "n": "Juego racores Seastar regulables ORB HF6006", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
+  {"r": "T2B1", "n": "Juego adaptadores montaje piloto automático Lowrance / Simrad", "d": "Pinchos pared almacén (junto al búnker)", "t": ["pk-pared"], "k": "hydrodrive direccion hidraulica"},
 ];
-const DURATIONS = [15, 30, 45, 60, 75, 90, 105, 120, 150, 180, 210, 240, 300, 360];
-let SLOTS = [];
-let ITEMS = loadItems();
+const $ = id => document.getElementById(id);
+const norm = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+let sel = null;
 
-function loadItems() {
-  try {
-    const s = JSON.parse(localStorage.getItem("lash_items"));
-    if (Array.isArray(s)) return s.filter(x => x && x.name && x.kwh > 0 && x.min > 0);
-  } catch {}
-  return DEFAULTS.map(d => ({ ...d }));
-}
-function saveItems() { try { localStorage.setItem("lash_items", JSON.stringify(ITEMS)); } catch {} }
-
-// ---------- Fechas en hora de Madrid ----------
-function madrid(ms) {
-  const p = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
-    .formatToParts(new Date(ms)).map(x => [x.type, x.value]));
-  return { date: `${p.year}-${p.month}-${p.day}`, hm: `${p.hour}:${p.minute}` };
-}
-function addDays(d, n) { const t = new Date(d + "T12:00:00Z"); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); }
-const isTomorrow = ms => madrid(ms).date !== madrid(Date.now()).date;
-const durTxt = m => (Math.floor(m / 60) ? Math.floor(m / 60) + " h" : "") + (m % 60 ? (m >= 60 ? " " : "") + (m % 60) + " min" : "");
-const num = (v, d) => v.toFixed(d).replace(".", ",");
-// Fecha en formato dd/mm/aa, hora de Madrid
-const fmtDate = ms => { const [y, m, d] = madrid(ms).date.split("-"); return `${d}/${m}/${y.slice(2)}`; };
-
-// ---------- Datos ----------
-async function fetchPrices() {
-  const today = madrid(Date.now()).date, tomorrow = addDays(today, 1);
-  const base = "https://apidatos.ree.es/es/datos/mercados/precios-mercados-tiempo-real";
-  const tries = [
-    `start_date=${today}T00:00&end_date=${tomorrow}T23:59&time_trunc=hour`,
-    `start_date=${today}T00:00&end_date=${today}T23:59&time_trunc=hour`,
-  ];
-  let j = null, lastErr = "";
-  for (const q of tries) {
-    try {
-      const r = await fetch(`${base}?${q}`, { headers: { Accept: "application/json" } });
-      const body = await r.json().catch(() => null);
-      if (r.ok && body?.included) { j = body; break; }
-      lastErr = `REE respondió ${r.status}` + (body?.errors?.[0]?.detail ? `: ${body.errors[0].detail}` : "");
-    } catch (e) { lastErr = e.message; }
-  }
-  if (!j) throw new Error(lastErr || "sin respuesta");
-  const serie = j.included.find(s => /pvpc/i.test(s.attributes?.title || ""));
-  if (!serie) throw new Error("no viene el precio PVPC");
-  const vals = serie.attributes.values
-    .map(v => ({ t: Date.parse(v.datetime), p: v.value / 1000 }))
-    .filter(v => !isNaN(v.t) && v.p != null)
-    .sort((a, b) => a.t - b.t);
-  return vals.map((v, i) => {
-    const step = i < vals.length - 1 ? vals[i + 1].t - v.t : 3600e3;
-    return { t: v.t, end: v.t + Math.min(step, 3600e3), p: v.p };
-  });
-}
-
-// ---------- Cálculo ----------
-function cost(a, b, kwh) {
-  const perMs = kwh / (b - a);
-  let c = 0, cov = 0;
-  for (const s of SLOTS) {
-    const lo = Math.max(a, s.t), hi = Math.min(b, s.end);
-    if (hi > lo) { c += (hi - lo) * perMs * s.p; cov += hi - lo; }
-  }
-  return cov >= b - a - 1000 ? c : null;
-}
-function best(item) {
-  const now = Date.now(), dur = item.min * 60e3;
-  let b = null;
-  for (const st of [now, ...SLOTS.map(s => s.t).filter(t => t > now)]) {
-    const c = cost(st, st + dur, item.kwh);
-    if (c != null && (!b || c < b.c - 1e-9)) b = { st, en: st + dur, c };
-  }
-  return { b, nowC: cost(now, now + dur, item.kwh) };
-}
-function level(p) {
-  const ps = SLOTS.map(s => s.p).sort((a, b) => a - b);
-  return p <= ps[Math.floor(ps.length / 3)] ? "cheap" : p <= ps[Math.floor(ps.length * 2 / 3)] ? "mid" : "dear";
-}
-
-// ---------- Pintar ----------
-function renderNow() {
-  const now = Date.now();
-  const s = SLOTS.find(x => x.t <= now && now < x.end);
-  $("now").hidden = !s;
-  if (!s) return;
-  $("nowPrice").textContent = num(s.p, 3);
-  const lv = level(s.p);
-  $("nowTag").className = "tag " + lv;
-  $("nowTag").textContent = { cheap: "Barata", mid: "Media", dear: "Cara" }[lv] + " ahora";
-  renderDay();
-}
-
-// Día que se ve en la gráfica y en las tarjetas de más barata/más cara
-let showTomorrow = false;
-function renderDay() {
-  const hasTomorrow = SLOTS.some(x => isTomorrow(x.t));
-  if (!hasTomorrow) showTomorrow = false;
-  $("daytabs").hidden = !hasTomorrow;
-  $("tomorrowSoon").hidden = hasTomorrow;
-  $("tabToday").setAttribute("aria-pressed", !showTomorrow);
-  $("tabTomorrow").setAttribute("aria-pressed", showTomorrow);
-  const day = SLOTS.filter(x => isTomorrow(x.t) === showTomorrow);
-  if (!day.length) return;
-  $("chartDate").textContent = fmtDate(day[0].t);
-  const mn = day.reduce((a, b) => b.p < a.p ? b : a);
-  const mx = day.reduce((a, b) => b.p > a.p ? b : a);
-  const span = s => `${madrid(s.t).hm}–${madrid(s.end).hm}`;
-  $("loTime").textContent = span(mn); $("loPrice").textContent = num(mn.p, 3) + " €/kWh";
-  $("hiTime").textContent = span(mx); $("hiPrice").textContent = num(mx.p, 3) + " €/kWh";
-  $("nowSub").hidden = true;
-  renderChart(day, mn, mx);
-}
-
-function renderChart(day, mn, mx) {
-  $("chartbox").hidden = false;
-  const W = 520, H = 170, L = 34, R = 6, T = 10, B = 22;
-  const n = day.length, bw = (W - L - R) / n;
-  const maxP = Math.ceil(mx.p * 20) / 20;
-  const y = p => T + (1 - p / maxP) * (H - T - B);
-  let g = "";
-  for (let k = 0; k <= 2; k++) {
-    const p = maxP * k / 2;
-    g += `<line x1="${L}" x2="${W - R}" y1="${y(p)}" y2="${y(p)}" stroke="var(--line)"/>`;
-    g += `<text x="${L - 5}" y="${y(p) + 3}" text-anchor="end" font-size="9" fill="var(--muted)" font-family="var(--font-data)">${num(p, 2)}</text>`;
-  }
-  const now = Date.now();
-  const sel = day.find(s => s.t === pickedT);
-  const focus = sel || day.find(s => s.t <= now && now < s.end); // barra destacada: la tocada o la actual
-  let hits = "";
-  day.forEach((s, i) => {
-    const x = L + i * bw;
-    const isNow = s.t <= now && now < s.end;
-    const isFocus = s === focus;
-    // El resto de barras se apagan para que resalte la destacada
-    const op = !focus || isFocus ? 1 : .25;
-    // La hora actual lleva siempre el borde, aunque se esté mirando otro tramo
-    if (isFocus || isNow) g += `<rect x="${(x - .5).toFixed(1)}" y="${(y(s.p) - 1.5).toFixed(1)}" width="${(bw + 1).toFixed(1)}" height="${(y(0) - y(s.p) + 1.5).toFixed(1)}" rx="2.5" fill="none" stroke="var(--ink)" stroke-width="1.5"/>`;
-    g += `<rect x="${(x + 1).toFixed(1)}" y="${y(s.p).toFixed(1)}" width="${(bw - 2).toFixed(1)}" height="${(y(0) - y(s.p)).toFixed(1)}" rx="1.5" fill="var(--${level(s.p)})" opacity="${op}"/>`;
-    if (isFocus) {
-      const lab = sel ? num(s.p, 3) : "Ahora";
-      const lx = Math.min(Math.max(x + bw / 2, L + 14), W - R - 14);
-      g += `<text x="${lx}" y="${Math.max(y(s.p) - 4, 9)}" text-anchor="middle" font-size="9" fill="var(--ink)" font-weight="600" font-family="var(--font-data)">${lab}</text>`;
-    } else if (isNow) {
-      g += `<text x="${x + bw / 2}" y="${Math.max(y(s.p) - 4, 9)}" text-anchor="middle" font-size="9" fill="var(--muted)">Ahora</text>`;
-    }
-    // Zona táctil de toda la altura para que sea fácil tocar con el dedo
-    hits += `<rect class="hit" data-t="${s.t}" x="${x}" y="0" width="${bw}" height="${H}" fill="transparent"/>`;
-    const h = +madrid(s.t).hm.slice(0, 2);
-    if (h % 3 === 0) g += `<text x="${x + bw / 2}" y="${H - 6}" text-anchor="middle" font-size="9" fill="var(--muted)" font-family="var(--font-data)">${String(h).padStart(2, "0")}</text>`;
-  });
-  $("chart").innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Precio de la luz por horas">${g}${hits}</svg>`;
-  $("pick").innerHTML = sel
-    ? `<b>${madrid(sel.t).hm}–${madrid(sel.end).hm}</b> · <b>${num(sel.p, 3)} €/kWh</b> · <span class="lv-${level(sel.p)}">${{ cheap: "Barata", mid: "Media", dear: "Cara" }[level(sel.p)]}</span>`
-    : "Toca una barra para ver su precio";
-}
-let pickedT = null;
-$("chart").addEventListener("click", e => {
-  const h = e.target.closest(".hit");
-  if (!h) return;
-  const t = +h.dataset.t;
-  pickedT = pickedT === t ? null : t; // tocar otra vez la misma barra la deselecciona
-  renderDay();
-});
-$("tabToday").onclick = () => { showTomorrow = false; pickedT = null; renderDay(); };
-$("tabTomorrow").onclick = () => { showTomorrow = true; pickedT = null; renderDay(); };
-
-function renderList() {
-  const box = $("list"); box.innerHTML = "";
-  if (!ITEMS.length) { box.innerHTML = `<div class="empty">No hay aparatos. Añade uno abajo.</div>`; return; }
-  ITEMS.forEach((it, i) => {
-    const el = document.createElement("article");
-    el.className = "item";
-    el.dataset.i = i;
-    let when = `<div class="when-sub">Sin precios suficientes</div>`, foot = "";
-    if (SLOTS.length) {
-      const { b, nowC } = best(it);
-      if (b) {
-        const wait = Math.round((b.st - Date.now()) / 60e3);
-        const isNow = wait < 5;
-        when = `<div class="time ${isNow ? "now" : ""}">${isNow ? "Ya" : madrid(b.st).hm}</div>
-                <div class="when-sub">${isNow ? "Es buen momento" : (isTomorrow(b.st) ? "Mañana" : "Hoy")} · Acaba ${madrid(b.en).hm}</div>`;
-        const save = nowC != null ? nowC - b.c : 0;
-        foot = `<div class="item-foot"><span>Coste <b>${num(b.c, 2)} €</b>${save > 0.005 ? ` · Ahorras <b>${num(save, 2)} €</b>` : ""}${!isNow ? ` · Tiempo restante para el ahorro <b>${Math.floor(wait / 60)}h${String(wait % 60).padStart(2, "0")}</b>` : ""}</span>
-                <span class="actions"><button class="edit" type="button">Editar</button><button class="remove" type="button">Quitar</button></span></div>`;
-      }
-    }
-    if (!foot) foot = `<div class="item-foot"><span></span><span class="actions"><button class="edit" type="button">Editar</button><button class="remove" type="button">Quitar</button></span></div>`;
-    el.innerHTML = `<button class="grip" type="button" aria-label="Arrastrar para ordenar"><svg viewBox="0 0 10 16" aria-hidden="true"><g fill="currentColor"><circle cx="2.5" cy="3" r="1.4"/><circle cx="7.5" cy="3" r="1.4"/><circle cx="2.5" cy="8" r="1.4"/><circle cx="7.5" cy="8" r="1.4"/><circle cx="2.5" cy="13" r="1.4"/><circle cx="7.5" cy="13" r="1.4"/></g></svg></button><div class="item-name"></div><div class="item-when">${when}</div>
-      <div class="item-spec">${num(it.kwh, 1)} kWh · ${durTxt(it.min)}</div>${foot}`;
-    el.querySelector(".item-name").textContent = it.name;
-    el.querySelector(".edit").onclick = () => openDialog(i);
-    // Quitar pide un segundo toque para confirmar
-    const rm = el.querySelector(".remove");
-    rm.onclick = () => {
-      if (rm.dataset.armed) { ITEMS.splice(i, 1); saveItems(); renderList(); return; }
-      rm.dataset.armed = "1"; rm.textContent = "¿Quitar?"; rm.classList.add("armed");
-      setTimeout(() => { if (rm.isConnected) { delete rm.dataset.armed; rm.textContent = "Quitar"; rm.classList.remove("armed"); } }, 3000);
-    };
-    el.querySelector(".grip").addEventListener("pointerdown", e => startDrag(e, el));
-    box.appendChild(el);
-  });
-}
-
-// ---------- Ordenar arrastrando (funciona con dedo y ratón) ----------
-let dragging = false;
-function startDrag(e, el) {
-  e.preventDefault();
-  dragging = true;
+function render() {
+  const q = norm($("q").value);
+  $("clear").hidden = !$("q").value;
   const box = $("list");
-  const grip = e.currentTarget;
-  grip.setPointerCapture(e.pointerId);
-  el.classList.add("dragging");
-  let lastY = e.clientY, offset = 0;
-  const move = ev => {
-    offset += ev.clientY - lastY; lastY = ev.clientY;
-    // Si se pasa de la mitad de la tarjeta vecina, se intercambian
-    const prev = el.previousElementSibling, next = el.nextElementSibling;
-    if (next && offset > next.offsetHeight / 2) { const h = next.offsetHeight + 10; box.insertBefore(next, el); offset -= h; }
-    else if (prev && offset < -prev.offsetHeight / 2) { const h = prev.offsetHeight + 10; box.insertBefore(el, prev); offset += h; }
-    el.style.transform = `translateY(${offset}px)`;
-  };
-  const end = () => {
-    grip.removeEventListener("pointermove", move);
-    grip.removeEventListener("pointerup", end);
-    grip.removeEventListener("pointercancel", end);
-    el.classList.remove("dragging"); el.style.transform = "";
-    dragging = false;
-    const order = [...box.children].map(c => +c.dataset.i);
-    ITEMS = order.map(i => ITEMS[i]);
-    saveItems(); renderList();
-  };
-  grip.addEventListener("pointermove", move);
-  grip.addEventListener("pointerup", end);
-  grip.addEventListener("pointercancel", end);
-}
-
-// ---------- Formulario ----------
-$("fMin").innerHTML = DURATIONS.map(m => `<option value="${m}" ${m === 60 ? "selected" : ""}>${durTxt(m)}</option>`).join("");
-// editing = índice del aparato que se edita, o null si se añade uno nuevo
-let editing = null;
-function openDialog(i = null) {
-  editing = i;
-  const it = i == null ? null : ITEMS[i];
-  $("dlgTitle").textContent = it ? "Editar aparato" : "Añadir aparato";
-  $("fSave").textContent = it ? "Guardar" : "Añadir";
-  $("fName").value = it ? it.name : "";
-  $("fKwh").value = it ? num(it.kwh, 1) : "";
-  // Si la duración guardada no está en la lista, se añade como opción
-  if (it && !DURATIONS.includes(it.min)) $("fMin").insertAdjacentHTML("beforeend", `<option value="${it.min}">${durTxt(it.min)}</option>`);
-  $("fMin").value = String(it ? it.min : 60);
-  $("formErr").hidden = true;
-  $("dlg").showModal();
-  if (!it) $("fName").focus();
-}
-$("openAdd").onclick = () => openDialog();
-$("fCancel").onclick = () => $("dlg").close();
-// Tocar fuera del cuadro lo cierra
-$("dlg").addEventListener("click", e => {
-  if (e.target !== $("dlg")) return;
-  const r = $("dlg").getBoundingClientRect();
-  const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
-  if (!inside) $("dlg").close();
-});
-$("addForm").addEventListener("submit", e => {
-  e.preventDefault();
-  const name = $("fName").value.trim();
-  const kwh = parseFloat($("fKwh").value.replace(",", "."));
-  const min = +$("fMin").value;
-  let err = "";
-  if (!name) err = "Ponle un nombre al aparato.";
-  else if (!(kwh > 0 && kwh <= 50)) err = "Escribe el consumo en kWh, por ejemplo 1,5.";
-  $("formErr").hidden = !err; $("formErr").textContent = err;
-  if (err) return;
-  if (editing == null) ITEMS.push({ name, kwh, min });
-  else ITEMS[editing] = { name, kwh, min };
-  saveItems(); renderList();
-  $("dlg").close();
-});
-
-async function refresh() {
-  try {
-    SLOTS = await fetchPrices();
-    if (!SLOTS.length) throw new Error("REE no devolvió precios");
-    $("status").hidden = true;
-    renderNow(); renderList();
-  } catch (e) {
-    $("status").hidden = false; $("status").className = "status err";
-    $("status").textContent = `No se pudieron cargar los precios (${e.message}). Recarga la página en un rato.`;
-    renderList();
+  box.innerHTML = "";
+  if (!q) return;                       // sin texto no se enseña nada
+  const qq = q.replace(/[\s\-\/.,]/g, "");
+  const list = PRODUCTOS.filter(p => {
+    const txt = norm([p.n, p.r, p.a, p.d, p.k].join(" "));
+    return txt.includes(q) || txt.replace(/[\s\-\/.,]/g, "").includes(qq) || q.split(" ").every(w => txt.includes(w));
+  });
+  if (!list.length) { box.innerHTML = `<div class="empty">No encuentro «${$("q").value.replace(/</g, "&lt;")}». Prueba con otra palabra.</div>`; return; }
+  for (const p of list) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "item" + (sel === p ? " sel" : "");
+    b.innerHTML = `<span><b></b><span class="ref"></span></span><small></small>`;
+    b.querySelector("b").textContent = p.n;
+    b.querySelector(".ref").textContent = p.r ? "Ref. " + p.r + (p.a ? " · " + p.a : "") : "";
+    b.querySelector("small").textContent = p.d;
+    b.onclick = () => pick(p);
+    box.appendChild(b);
   }
 }
-$("todayDate").textContent = fmtDate(Date.now());
-renderList();
-refresh();
-setInterval(() => { $("todayDate").textContent = fmtDate(Date.now()); if (SLOTS.length && !dragging) { renderNow(); renderList(); } }, 60e3);
-setInterval(refresh, 30 * 60e3);
-
-// Guarda una copia de la app para que abra más rápido y sin conexión (los precios siempre necesitan internet)
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); });
+function pick(p) {
+  sel = sel === p ? null : p;          // tocar otra vez el mismo lo apaga
+  const plan = $("plan");
+  plan.querySelectorAll(".hl").forEach(el => el.classList.remove("hl"));
+  plan.querySelectorAll(".off").forEach(el => el.classList.remove("off"));
+  plan.classList.toggle("has-hl", !!(sel && sel.t.length));
+  $("where").hidden = !sel;
+  if (sel) {
+    const zs = new Set(), ts = new Set();
+    sel.t.forEach(id => { const el = document.getElementById(id); if (el) { el.classList.add("hl"); zs.add(el.dataset.z); ts.add(el.dataset.t); } });
+    plan.querySelectorAll("[data-z]").forEach(el => el.classList.toggle("off", !zs.has(el.dataset.z)));
+    const t = ts.size === 1 ? [...ts][0] : "alm";
+    $("where").style.setProperty("--hl", `var(--v-${t})`);
+    $("where").style.setProperty("--hl-ink", `var(--zi-${t})`);
+    $("whereWhat").textContent = sel.n + (sel.r ? " · Ref. " + sel.r : "");
+    $("whereLoc").textContent = sel.d;
+    $("plan").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  render();
 }
+$("q").addEventListener("input", render);
+$("q").addEventListener("keydown", e => { if (e.key === "Enter") { const first = $("list").querySelector(".item"); if (first) first.click(); } });
+$("clear").onclick = () => { $("q").value = ""; render(); $("q").focus(); };
+render();
+
+// Ajusta el fondo de cada nombre de estancia al tamaño real del texto
+function fitLabels() {
+  document.querySelectorAll("#plan .zlabel").forEach(g => {
+    const t = g.querySelector("text"), r = g.querySelector("rect"), b = t.getBBox();
+    const px = .32, py = .16;
+    r.setAttribute("x", b.x - px); r.setAttribute("y", b.y - py);
+    r.setAttribute("width", b.width + px * 2); r.setAttribute("height", b.height + py * 2);
+  });
+}
+fitLabels();
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitLabels);
+</script>
+
+<script>
+if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
 </script>
 </body>
 </html>
