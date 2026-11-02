@@ -14,9 +14,14 @@
 <link rel="manifest" href="manifest.json">
 <title>Luz a su hora</title>
 <meta name="description" content="La hora más barata del PVPC para poner cada aparato.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Tipos de letra dentro de la app: no espera a internet para pintar */
+@font-face{font-family:"Bricolage Grotesque";src:url(fonts/bricolage-grotesque-latin-opsz-normal.woff2) format("woff2-variations");font-weight:200 800;font-style:normal;font-display:swap}
+@font-face{font-family:"Figtree";src:url(fonts/figtree-latin-400-normal.woff2) format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Figtree";src:url(fonts/figtree-latin-600-normal.woff2) format("woff2");font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:"JetBrains Mono";src:url(fonts/jetbrains-mono-latin-400-normal.woff2) format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"JetBrains Mono";src:url(fonts/jetbrains-mono-latin-600-normal.woff2) format("woff2");font-weight:600;font-style:normal;font-display:swap}
+</style>
 <style>
 /* Layout: una columna — precio de ahora, lista de aparatos con su mejor hora, formulario para añadir */
 :root {
