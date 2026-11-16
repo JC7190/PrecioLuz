@@ -72,7 +72,6 @@ h1 { font: 800 1.9rem/1 var(--font-display); margin: 0; letter-spacing: -.01em; 
 .tag.cheap { color: var(--cheap); background: color-mix(in srgb, var(--cheap) 15%, transparent); }
 .tag.mid { color: var(--mid); background: color-mix(in srgb, var(--mid) 15%, transparent); }
 .tag.dear { color: var(--dear); background: color-mix(in srgb, var(--dear) 15%, transparent); }
-.sub { font: 400 .82rem/1.5 var(--font-data); color: var(--muted); }
 .extremes { display: flex; gap: 10px; flex-wrap: wrap; }
 .ext { flex: 1 1 140px; border-radius: 10px; padding: 10px 12px; display: grid; gap: 2px; }
 .ext.lo { background: color-mix(in srgb, var(--cheap) 14%, transparent); color: var(--cheap); }
@@ -117,7 +116,6 @@ h1 { font: 800 1.9rem/1 var(--font-display); margin: 0; letter-spacing: -.01em; 
 .item-spec { font: 400 .78rem var(--font-data); color: var(--muted); }
 .item-when { grid-row: 1 / span 2; grid-column: 3; text-align: right; }
 .time { font: 800 1.9rem/1 var(--font-display); color: var(--cheap); font-variant-numeric: tabular-nums; }
-.time.now { color: var(--cheap); }
 .when-sub { font: 400 .78rem var(--font-data); color: var(--muted); }
 .item-foot { grid-column: 1 / -1; display: flex; justify-content: space-between; gap: 10px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); font-size: .85rem; color: var(--muted); }
 .item-foot b { color: var(--ink); font-weight: 600; font-family: var(--font-data); }
@@ -159,7 +157,6 @@ footer a { color: inherit; }
       <div class="ext lo"><span class="ext-label">Más barata</span><span class="ext-time" id="loTime">–</span><span class="ext-price" id="loPrice"></span></div>
       <div class="ext hi"><span class="ext-label">Más cara</span><span class="ext-time" id="hiTime">–</span><span class="ext-price" id="hiPrice"></span></div>
     </div>
-    <div class="sub" id="nowSub"></div>
   </section>
 
   <section class="chartbox" id="chartbox" hidden>
@@ -231,13 +228,16 @@ function loadItems() {
 function saveItems() { try { localStorage.setItem("lash_items", JSON.stringify(ITEMS)); } catch {} }
 
 // ---------- Fechas en hora de Madrid ----------
+// El formateador se crea una sola vez: crearlo en cada llamada es lento y se usa cientos de veces por pintada
+const FMT = new Intl.DateTimeFormat("en-CA", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 function madrid(ms) {
-  const p = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
-    .formatToParts(new Date(ms)).map(x => [x.type, x.value]));
+  const p = Object.fromEntries(FMT.formatToParts(new Date(ms)).map(x => [x.type, x.value]));
   return { date: `${p.year}-${p.month}-${p.day}`, hm: `${p.hour}:${p.minute}` };
 }
 function addDays(d, n) { const t = new Date(d + "T12:00:00Z"); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); }
-const isTomorrow = ms => madrid(ms).date !== madrid(Date.now()).date;
+const todayStr = () => madrid(Date.now()).date;
+// Fechas "aaaa-mm-dd": se comparan como texto. Los días ya pasados NO cuentan como mañana.
+const isTomorrow = ms => madrid(ms).date > todayStr();
 const durTxt = m => (Math.floor(m / 60) ? Math.floor(m / 60) + " h" : "") + (m % 60 ? (m >= 60 ? " " : "") + (m % 60) + " min" : "");
 const num = (v, d) => v.toFixed(d).replace(".", ",");
 // Fecha en formato dd/mm/aa, hora de Madrid
@@ -254,11 +254,15 @@ async function fetchPrices() {
   let j = null, lastErr = "";
   for (const q of tries) {
     try {
-      const r = await fetch(`${base}?${q}`, { headers: { Accept: "application/json" } });
+      // Límite de 15 s: si la conexión se cuelga, se muestra el error en vez de "Cargando…" para siempre
+      const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 15e3);
+      let r;
+      try { r = await fetch(`${base}?${q}`, { headers: { Accept: "application/json" }, signal: ctl.signal }); }
+      finally { clearTimeout(timer); }
       const body = await r.json().catch(() => null);
       if (r.ok && body?.included) { j = body; break; }
       lastErr = `REE respondió ${r.status}` + (body?.errors?.[0]?.detail ? `: ${body.errors[0].detail}` : "");
-    } catch (e) { lastErr = e.message; }
+    } catch (e) { lastErr = e.name === "AbortError" ? "Red Eléctrica no contesta" : e.message; }
   }
   if (!j) throw new Error(lastErr || "sin respuesta");
   const serie = j.included.find(s => /pvpc/i.test(s.attributes?.title || ""));
@@ -286,15 +290,35 @@ function cost(a, b, kwh) {
 function best(item) {
   const now = Date.now(), dur = item.min * 60e3;
   let b = null;
-  for (const st of [now, ...SLOTS.map(s => s.t).filter(t => t > now)]) {
+  // Con precio fijo dentro de cada tramo, lo más barato siempre empieza o termina en un cambio de tramo
+  const starts = [now, ...SLOTS.map(s => s.t), ...SLOTS.map(s => s.end - dur)].filter(t => t >= now);
+  for (const st of [...new Set(starts)].sort((a, c) => a - c)) {
     const c = cost(st, st + dur, item.kwh);
     if (c != null && (!b || c < b.c - 1e-9)) b = { st, en: st + dur, c };
   }
   return { b, nowC: cost(now, now + dur, item.kwh) };
 }
-function level(p) {
-  const ps = SLOTS.map(s => s.p).sort((a, b) => a - b);
-  return p <= ps[Math.floor(ps.length / 3)] ? "cheap" : p <= ps[Math.floor(ps.length * 2 / 3)] ? "mid" : "dear";
+// Barata/media/cara se decide comparando con las horas del MISMO día (si no, los colores de hoy cambian al publicarse mañana).
+// Los umbrales se calculan una vez cada vez que cambian los precios.
+let LEVELS = {};
+function computeLevels() {
+  const byDay = {};
+  for (const s of SLOTS) (byDay[madrid(s.t).date] ||= []).push(s.p);
+  LEVELS = {};
+  for (const [d, ps] of Object.entries(byDay)) {
+    ps.sort((a, b) => a - b);
+    LEVELS[d] = [ps[Math.floor(ps.length / 3)], ps[Math.floor(ps.length * 2 / 3)]];
+  }
+}
+function level(s) {
+  const [a, b] = LEVELS[madrid(s.t).date] || [Infinity, Infinity];
+  return s.p <= a ? "cheap" : s.p <= b ? "mid" : "dear";
+}
+// Quita los precios de días ya pasados (p. ej. pasada la medianoche con la app abierta)
+function pruneSlots() {
+  const d = todayStr(), before = SLOTS.length;
+  SLOTS = SLOTS.filter(s => madrid(s.t).date >= d);
+  if (SLOTS.length !== before) computeLevels();
 }
 
 // ---------- Pintar ----------
@@ -304,7 +328,7 @@ function renderNow() {
   $("now").hidden = !s;
   if (!s) return;
   $("nowPrice").textContent = num(s.p, 3);
-  const lv = level(s.p);
+  const lv = level(s);
   $("nowTag").className = "tag " + lv;
   $("nowTag").textContent = { cheap: "Barata", mid: "Media", dear: "Cara" }[lv] + " ahora";
   renderDay();
@@ -319,7 +343,8 @@ function renderDay() {
   $("tomorrowSoon").hidden = hasTomorrow;
   $("tabToday").setAttribute("aria-pressed", !showTomorrow);
   $("tabTomorrow").setAttribute("aria-pressed", showTomorrow);
-  const day = SLOTS.filter(x => isTomorrow(x.t) === showTomorrow);
+  const d = todayStr();
+  const day = SLOTS.filter(x => showTomorrow ? madrid(x.t).date > d : madrid(x.t).date === d);
   if (!day.length) return;
   $("chartDate").textContent = fmtDate(day[0].t);
   const mn = day.reduce((a, b) => b.p < a.p ? b : a);
@@ -327,7 +352,6 @@ function renderDay() {
   const span = s => `${madrid(s.t).hm}–${madrid(s.end).hm}`;
   $("loTime").textContent = span(mn); $("loPrice").textContent = num(mn.p, 3) + " €/kWh";
   $("hiTime").textContent = span(mx); $("hiPrice").textContent = num(mx.p, 3) + " €/kWh";
-  $("nowSub").hidden = true;
   renderChart(day, mn, mx);
 }
 
@@ -355,7 +379,7 @@ function renderChart(day, mn, mx) {
     const op = !focus || isFocus ? 1 : .25;
     // La hora actual lleva siempre el borde, aunque se esté mirando otro tramo
     if (isFocus || isNow) g += `<rect x="${(x - .5).toFixed(1)}" y="${(y(s.p) - 1.5).toFixed(1)}" width="${(bw + 1).toFixed(1)}" height="${(y(0) - y(s.p) + 1.5).toFixed(1)}" rx="2.5" fill="none" stroke="var(--ink)" stroke-width="1.5"/>`;
-    g += `<rect x="${(x + 1).toFixed(1)}" y="${y(s.p).toFixed(1)}" width="${(bw - 2).toFixed(1)}" height="${(y(0) - y(s.p)).toFixed(1)}" rx="1.5" fill="var(--${level(s.p)})" opacity="${op}"/>`;
+    g += `<rect x="${(x + 1).toFixed(1)}" y="${y(s.p).toFixed(1)}" width="${(bw - 2).toFixed(1)}" height="${(y(0) - y(s.p)).toFixed(1)}" rx="1.5" fill="var(--${level(s)})" opacity="${op}"/>`;
     if (isFocus) {
       const lab = sel ? num(s.p, 3) : "Ahora";
       const lx = Math.min(Math.max(x + bw / 2, L + 14), W - R - 14);
@@ -370,7 +394,7 @@ function renderChart(day, mn, mx) {
   });
   $("chart").innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Precio de la luz por horas">${g}${hits}</svg>`;
   $("pick").innerHTML = sel
-    ? `<b>${madrid(sel.t).hm}–${madrid(sel.end).hm}</b> · <b>${num(sel.p, 3)} €/kWh</b> · <span class="lv-${level(sel.p)}">${{ cheap: "Barata", mid: "Media", dear: "Cara" }[level(sel.p)]}</span>`
+    ? `<b>${madrid(sel.t).hm}–${madrid(sel.end).hm}</b> · <b>${num(sel.p, 3)} €/kWh</b> · <span class="lv-${level(sel)}">${{ cheap: "Barata", mid: "Media", dear: "Cara" }[level(sel)]}</span>`
     : "Toca una barra para ver su precio";
 }
 let pickedT = null;
@@ -397,7 +421,7 @@ function renderList() {
       if (b) {
         const wait = Math.round((b.st - Date.now()) / 60e3);
         const isNow = wait < 5;
-        when = `<div class="time ${isNow ? "now" : ""}">${isNow ? "Ya" : madrid(b.st).hm}</div>
+        when = `<div class="time">${isNow ? "Ya" : madrid(b.st).hm}</div>
                 <div class="when-sub">${isNow ? "Es buen momento" : (isTomorrow(b.st) ? "Mañana" : "Hoy")} · Acaba ${madrid(b.en).hm}</div>`;
         const save = nowC != null ? nowC - b.c : 0;
         foot = `<div class="item-foot"><span>Coste <b>${num(b.c, 2)} €</b>${save > 0.005 ? ` · Ahorras <b>${num(save, 2)} €</b>` : ""}${!isNow ? ` · Tiempo restante para el ahorro <b>${Math.floor(wait / 60)}h${String(wait % 60).padStart(2, "0")}</b>` : ""}</span>
@@ -455,7 +479,11 @@ function startDrag(e, el) {
 }
 
 // ---------- Formulario ----------
-$("fMin").innerHTML = DURATIONS.map(m => `<option value="${m}" ${m === 60 ? "selected" : ""}>${durTxt(m)}</option>`).join("");
+// Si la duración guardada no está en la lista, se añade como opción (se reconstruye cada vez para no repetirla)
+function fillDurations(extra) {
+  const ms = extra && !DURATIONS.includes(extra) ? [...DURATIONS, extra].sort((a, b) => a - b) : DURATIONS;
+  $("fMin").innerHTML = ms.map(m => `<option value="${m}">${durTxt(m)}</option>`).join("");
+}
 // editing = índice del aparato que se edita, o null si se añade uno nuevo
 let editing = null;
 function openDialog(i = null) {
@@ -465,8 +493,7 @@ function openDialog(i = null) {
   $("fSave").textContent = it ? "Guardar" : "Añadir";
   $("fName").value = it ? it.name : "";
   $("fKwh").value = it ? num(it.kwh, 1) : "";
-  // Si la duración guardada no está en la lista, se añade como opción
-  if (it && !DURATIONS.includes(it.min)) $("fMin").insertAdjacentHTML("beforeend", `<option value="${it.min}">${durTxt(it.min)}</option>`);
+  fillDurations(it?.min);
   $("fMin").value = String(it ? it.min : 60);
   $("formErr").hidden = true;
   $("dlg").showModal();
@@ -497,10 +524,16 @@ $("addForm").addEventListener("submit", e => {
   $("dlg").close();
 });
 
-async function refresh() {
+let loading = null, lastLoad = 0;
+function refresh() {
+  // Si ya hay una carga en marcha, no se lanza otra
+  return loading ||= load().finally(() => { loading = null; });
+}
+async function load() {
   try {
-    SLOTS = await fetchPrices();
-    if (!SLOTS.length) throw new Error("REE no devolvió precios");
+    const slots = await fetchPrices();
+    if (!slots.length) throw new Error("REE no devolvió precios");
+    SLOTS = slots; computeLevels(); pruneSlots(); lastLoad = Date.now();
     $("status").hidden = true;
     renderNow(); renderList();
   } catch (e) {
@@ -512,8 +545,16 @@ async function refresh() {
 $("todayDate").textContent = fmtDate(Date.now());
 renderList();
 refresh();
-setInterval(() => { $("todayDate").textContent = fmtDate(Date.now()); if (SLOTS.length && !dragging) { renderNow(); renderList(); } }, 60e3);
+setInterval(() => { $("todayDate").textContent = fmtDate(Date.now()); pruneSlots(); if (SLOTS.length && !dragging) { renderNow(); renderList(); } }, 60e3);
 setInterval(refresh, 30 * 60e3);
+// Al volver a la app (sobre todo instalada en el móvil) se actualiza si los precios tienen más de 5 min
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "visible") return;
+  $("todayDate").textContent = fmtDate(Date.now());
+  pruneSlots();
+  if (SLOTS.length && !dragging) { renderNow(); renderList(); }
+  if (Date.now() - lastLoad > 5 * 60e3) refresh();
+});
 
 // Guarda una copia de la app para que abra más rápido y sin conexión (los precios siempre necesitan internet)
 if ("serviceWorker" in navigator) {
