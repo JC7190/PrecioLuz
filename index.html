@@ -142,6 +142,7 @@ input, select { background: var(--bg); border: 1px solid var(--line); border-rad
 .formerr { color: var(--dear); font-size: .85rem; }
 footer { font-size: .76rem; color: var(--muted); }
 footer a { color: inherit; }
+.version { display: block; margin-top: 6px; text-align: right; font-family: var(--font-data); }
 </style>
 </head>
 <body>
@@ -203,10 +204,13 @@ footer a { color: inherit; }
 
   <footer>
     Precios PVPC de <a href="https://www.ree.es/es/apidatos" target="_blank" rel="noopener">Red Eléctrica</a>, por horas. Solo sirve con la tarifa regulada PVPC. El coste es aproximado.
+    <span class="version" id="version"></span>
   </footer>
 </div>
 
 <script>
+// Súbelo en cada cambio que se publique: sale al pie de la app para saber qué versión tiene el móvil
+const VERSION = "1.2 · 16/11/26";
 const TZ = "Europe/Madrid";
 const $ = id => document.getElementById(id);
 const DEFAULTS = [
@@ -542,6 +546,7 @@ async function load() {
     renderList();
   }
 }
+$("version").textContent = "Versión " + VERSION;
 $("todayDate").textContent = fmtDate(Date.now());
 renderList();
 refresh();
