@@ -7,12 +7,12 @@
 <!-- Para instalarla en la pantalla de inicio del iPhone: icono, nombre y pantalla completa -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Luz">
+<meta name="apple-mobile-web-app-title" content="Ahorro Luz">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="manifest" href="manifest.json">
-<title>Luz a su hora</title>
+<title>Ahorro Luz</title>
 <meta name="description" content="La hora más barata del PVPC para poner cada aparato.">
 <style>
 /* Tipos de letra dentro de la app: no espera a internet para pintar */
@@ -142,12 +142,12 @@ input, select { background: var(--bg); border: 1px solid var(--line); border-rad
 .formerr { color: var(--dear); font-size: .85rem; }
 footer { font-size: .76rem; color: var(--muted); }
 footer a { color: inherit; }
-.version { display: block; margin-top: 6px; text-align: right; font-family: var(--font-data); }
+.version { display: block; margin-top: 6px; font-family: var(--font-data); }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="titlebar"><h1>Luz a su hora</h1><span class="date" id="todayDate"></span></div>
+  <div class="titlebar"><h1>Ahorro Luz</h1><span class="date" id="todayDate"></span></div>
 
   <section class="now" id="now" hidden>
     <div class="now-line">
@@ -210,7 +210,7 @@ footer a { color: inherit; }
 
 <script>
 // Súbelo en cada cambio que se publique: sale al pie de la app para saber qué versión tiene el móvil
-const VERSION = "1.2 · 16/11/26";
+const VERSION = "1.3 · 16/11/26";
 const TZ = "Europe/Madrid";
 const $ = id => document.getElementById(id);
 const DEFAULTS = [

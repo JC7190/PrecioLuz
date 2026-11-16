@@ -1,6 +1,6 @@
 {
-  "name": "Luz a su hora",
-  "short_name": "Luz",
+  "name": "Ahorro Luz",
+  "short_name": "Ahorro Luz",
   "description": "Precio PVPC de hoy y mañana y la hora más barata para cada aparato.",
   "lang": "es",
   "start_url": "./",
