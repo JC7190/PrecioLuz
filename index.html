@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#14181F">
+<meta name="theme-color" content="#F1F3F6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1117" media="(prefers-color-scheme: dark)">
 <!-- Para instalarla en la pantalla de inicio del iPhone: icono, nombre y pantalla completa -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -77,12 +78,12 @@ h1 { font: 800 1.9rem/1 var(--font-display); margin: 0; letter-spacing: -.01em; 
 .ext.lo { background: color-mix(in srgb, var(--cheap) 14%, transparent); color: var(--cheap); }
 .ext.hi { background: color-mix(in srgb, var(--dear) 14%, transparent); color: var(--dear); }
 .ext-label { font: 600 .72rem var(--font-body); text-transform: uppercase; letter-spacing: .08em; }
-.ext-time { font: 800 1.6rem/1.1 var(--font-display); font-variant-numeric: tabular-nums; }
+.ext-time { font: 800 clamp(1.2rem, 5.4vw, 1.6rem)/1.1 var(--font-display); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .ext-price { font: 400 .8rem var(--font-data); }
 .chartbox { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 14px 10px; display: grid; gap: 8px; }
 .chart-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.chart-title { font: 600 .78rem var(--font-body); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
-.daytabs { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.chart-title { flex: 1 1 auto; min-width: 0; font: 600 .78rem var(--font-body); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.daytabs { display: flex; flex-shrink: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .daytabs button { background: none; border: none; padding: 4px 12px; font-size: .82rem; color: var(--muted); }
 .daytabs button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
 .chart svg { display: block; width: 100%; height: auto; }
@@ -119,6 +120,11 @@ h1 { font: 800 1.9rem/1 var(--font-display); margin: 0; letter-spacing: -.01em; 
 .when-sub { font: 400 .78rem var(--font-data); color: var(--muted); }
 .item-foot { grid-column: 1 / -1; display: flex; justify-content: space-between; gap: 10px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); font-size: .85rem; color: var(--muted); }
 .item-foot b { color: var(--ink); font-weight: 600; font-family: var(--font-data); }
+/* Pantallas estrechas (iPhone SE): la hora pasa debajo del nombre para no partir palabras */
+@media (max-width: 360px) {
+  .item { grid-template-columns: auto 1fr; }
+  .item-when { grid-row: auto; grid-column: 2; text-align: left; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+}
 .edit { background: none; border: none; color: var(--muted); font-size: .82rem; text-decoration: underline; text-underline-offset: 3px; padding: 0; }
 .edit:hover { color: var(--accent); }
 .empty { color: var(--muted); font-size: .9rem; text-align: center; padding: 16px; border: 1px dashed var(--line); border-radius: 12px; }
@@ -210,7 +216,7 @@ footer a { color: inherit; }
 
 <script>
 // Súbelo en cada cambio que se publique: sale al pie de la app para saber qué versión tiene el móvil
-const VERSION = "1.3 · 16/11/26";
+const VERSION = "1.4 · 16/11/26";
 const TZ = "Europe/Madrid";
 const $ = id => document.getElementById(id);
 const DEFAULTS = [
@@ -225,7 +231,11 @@ let ITEMS = loadItems();
 function loadItems() {
   try {
     const s = JSON.parse(localStorage.getItem("lash_items"));
-    if (Array.isArray(s)) return s.filter(x => x && x.name && x.kwh > 0 && x.min > 0);
+    // Se normaliza lo guardado (números como texto, nombres largos…) y se descarta lo que no sirve:
+    // un consumo guardado como "2" rompía la lista entera
+    if (Array.isArray(s)) return s
+      .map(x => x && { name: String(x.name ?? "").trim().slice(0, 40), kwh: +x.kwh, min: Math.round(+x.min) })
+      .filter(x => x && x.name && x.kwh > 0 && x.kwh <= 50 && x.min > 0 && x.min <= 24 * 60);
   } catch {}
   return DEFAULTS.map(d => ({ ...d }));
 }
@@ -244,6 +254,8 @@ const todayStr = () => madrid(Date.now()).date;
 const isTomorrow = ms => madrid(ms).date > todayStr();
 const durTxt = m => (Math.floor(m / 60) ? Math.floor(m / 60) + " h" : "") + (m % 60 ? (m >= 60 ? " " : "") + (m % 60) + " min" : "");
 const num = (v, d) => v.toFixed(d).replace(".", ",");
+// kWh con hasta 2 decimales y sin ceros sobrantes: 0,25 se queda en 0,25 (antes se redondeaba a 0,3 al editar)
+const kwhTxt = v => String(+v.toFixed(2)).replace(".", ",");
 // Fecha en formato dd/mm/aa, hora de Madrid
 const fmtDate = ms => { const [y, m, d] = madrid(ms).date.split("-"); return `${d}/${m}/${y.slice(2)}`; };
 
@@ -266,18 +278,26 @@ async function fetchPrices() {
       const body = await r.json().catch(() => null);
       if (r.ok && body?.included) { j = body; break; }
       lastErr = `REE respondió ${r.status}` + (body?.errors?.[0]?.detail ? `: ${body.errors[0].detail}` : "");
-    } catch (e) { lastErr = e.name === "AbortError" ? "Red Eléctrica no contesta" : e.message; }
+    } catch (e) {
+      // Los errores de red del navegador vienen en inglés ("Failed to fetch", "Load failed"): se traducen
+      lastErr = e.name === "AbortError" ? "Red Eléctrica no contesta" : e instanceof TypeError ? "sin conexión" : e.message;
+    }
   }
   if (!j) throw new Error(lastErr || "sin respuesta");
   const serie = j.included.find(s => /pvpc/i.test(s.attributes?.title || ""));
   if (!serie) throw new Error("no viene el precio PVPC");
+  // Un precio vacío (null) se descarta: antes contaba como 0 € y salía como "la más barata"
   const vals = serie.attributes.values
+    .filter(v => Number.isFinite(v?.value))
     .map(v => ({ t: Date.parse(v.datetime), p: v.value / 1000 }))
-    .filter(v => !isNaN(v.t) && v.p != null)
+    .filter(v => !isNaN(v.t))
     .sort((a, b) => a.t - b.t);
   return vals.map((v, i) => {
     const step = i < vals.length - 1 ? vals[i + 1].t - v.t : 3600e3;
-    return { t: v.t, end: v.t + Math.min(step, 3600e3), p: v.p };
+    const end = v.t + Math.min(step, 3600e3);
+    // Día y horas en Madrid se calculan una vez aquí, no en cada pintada
+    const m = madrid(v.t);
+    return { t: v.t, end, p: v.p, day: m.date, hm: m.hm, endHm: madrid(end).hm };
   });
 }
 
@@ -307,7 +327,7 @@ function best(item) {
 let LEVELS = {};
 function computeLevels() {
   const byDay = {};
-  for (const s of SLOTS) (byDay[madrid(s.t).date] ||= []).push(s.p);
+  for (const s of SLOTS) (byDay[s.day] ||= []).push(s.p);
   LEVELS = {};
   for (const [d, ps] of Object.entries(byDay)) {
     ps.sort((a, b) => a - b);
@@ -315,13 +335,13 @@ function computeLevels() {
   }
 }
 function level(s) {
-  const [a, b] = LEVELS[madrid(s.t).date] || [Infinity, Infinity];
+  const [a, b] = LEVELS[s.day] || [Infinity, Infinity];
   return s.p <= a ? "cheap" : s.p <= b ? "mid" : "dear";
 }
 // Quita los precios de días ya pasados (p. ej. pasada la medianoche con la app abierta)
 function pruneSlots() {
   const d = todayStr(), before = SLOTS.length;
-  SLOTS = SLOTS.filter(s => madrid(s.t).date >= d);
+  SLOTS = SLOTS.filter(s => s.day >= d);
   if (SLOTS.length !== before) computeLevels();
 }
 
@@ -335,36 +355,37 @@ function renderNow() {
   const lv = level(s);
   $("nowTag").className = "tag " + lv;
   $("nowTag").textContent = { cheap: "Barata", mid: "Media", dear: "Cara" }[lv] + " ahora";
-  renderDay();
 }
 
 // Día que se ve en la gráfica y en las tarjetas de más barata/más cara
 let showTomorrow = false;
 function renderDay() {
-  const hasTomorrow = SLOTS.some(x => isTomorrow(x.t));
+  const d = todayStr();
+  const hasTomorrow = SLOTS.some(x => x.day > d);
   if (!hasTomorrow) showTomorrow = false;
   $("daytabs").hidden = !hasTomorrow;
   $("tomorrowSoon").hidden = hasTomorrow;
   $("tabToday").setAttribute("aria-pressed", !showTomorrow);
   $("tabTomorrow").setAttribute("aria-pressed", showTomorrow);
-  const d = todayStr();
-  const day = SLOTS.filter(x => showTomorrow ? madrid(x.t).date > d : madrid(x.t).date === d);
+  const day = SLOTS.filter(x => showTomorrow ? x.day > d : x.day === d);
+  // Sin precios del día: se oculta la gráfica en vez de dejar la anterior
+  $("chartbox").hidden = !day.length;
   if (!day.length) return;
   $("chartDate").textContent = fmtDate(day[0].t);
   const mn = day.reduce((a, b) => b.p < a.p ? b : a);
   const mx = day.reduce((a, b) => b.p > a.p ? b : a);
-  const span = s => `${madrid(s.t).hm}–${madrid(s.end).hm}`;
+  const span = s => `${s.hm}–${s.endHm}`;
   $("loTime").textContent = span(mn); $("loPrice").textContent = num(mn.p, 3) + " €/kWh";
   $("hiTime").textContent = span(mx); $("hiPrice").textContent = num(mx.p, 3) + " €/kWh";
   renderChart(day, mn, mx);
 }
 
 function renderChart(day, mn, mx) {
-  $("chartbox").hidden = false;
   const W = 520, H = 170, L = 34, R = 6, T = 10, B = 22;
   const n = day.length, bw = (W - L - R) / n;
-  const maxP = Math.ceil(mx.p * 20) / 20;
-  const y = p => T + (1 - p / maxP) * (H - T - B);
+  // Tope múltiplo de 0,02 para que la marca del medio sea exacta (antes salía 0,13 en vez de 0,125)
+  const maxP = Math.max(Math.ceil(mx.p * 50) / 50, 0.02);
+  const y = p => T + (1 - Math.max(p, 0) / maxP) * (H - T - B);
   let g = "";
   for (let k = 0; k <= 2; k++) {
     const p = maxP * k / 2;
@@ -393,12 +414,13 @@ function renderChart(day, mn, mx) {
     }
     // Zona táctil de toda la altura para que sea fácil tocar con el dedo
     hits += `<rect class="hit" data-t="${s.t}" x="${x}" y="0" width="${bw}" height="${H}" fill="transparent"/>`;
-    const h = +madrid(s.t).hm.slice(0, 2);
-    if (h % 3 === 0) g += `<text x="${x + bw / 2}" y="${H - 6}" text-anchor="middle" font-size="9" fill="var(--muted)" font-family="var(--font-data)">${String(h).padStart(2, "0")}</text>`;
+    // Etiqueta cada 3 horas, solo en el tramo "en punto" (con tramos de 15 min salía 4 veces)
+    const h = +s.hm.slice(0, 2);
+    if (h % 3 === 0 && s.hm.endsWith(":00")) g += `<text x="${x + bw / 2}" y="${H - 6}" text-anchor="middle" font-size="9" fill="var(--muted)" font-family="var(--font-data)">${String(h).padStart(2, "0")}</text>`;
   });
   $("chart").innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Precio de la luz por horas">${g}${hits}</svg>`;
   $("pick").innerHTML = sel
-    ? `<b>${madrid(sel.t).hm}–${madrid(sel.end).hm}</b> · <b>${num(sel.p, 3)} €/kWh</b> · <span class="lv-${level(sel)}">${{ cheap: "Barata", mid: "Media", dear: "Cara" }[level(sel)]}</span>`
+    ? `<b>${sel.hm}–${sel.endHm}</b> · <b>${num(sel.p, 3)} €/kWh</b> · <span class="lv-${level(sel)}">${{ cheap: "Barata", mid: "Media", dear: "Cara" }[level(sel)]}</span>`
     : "Toca una barra para ver su precio";
 }
 let pickedT = null;
@@ -434,7 +456,7 @@ function renderList() {
     }
     if (!foot) foot = `<div class="item-foot"><span></span><span class="actions"><button class="edit" type="button">Editar</button><button class="remove" type="button">Quitar</button></span></div>`;
     el.innerHTML = `<button class="grip" type="button" aria-label="Arrastrar para ordenar"><svg viewBox="0 0 10 16" aria-hidden="true"><g fill="currentColor"><circle cx="2.5" cy="3" r="1.4"/><circle cx="7.5" cy="3" r="1.4"/><circle cx="2.5" cy="8" r="1.4"/><circle cx="7.5" cy="8" r="1.4"/><circle cx="2.5" cy="13" r="1.4"/><circle cx="7.5" cy="13" r="1.4"/></g></svg></button><div class="item-name"></div><div class="item-when">${when}</div>
-      <div class="item-spec">${num(it.kwh, 1)} kWh · ${durTxt(it.min)}</div>${foot}`;
+      <div class="item-spec">${kwhTxt(it.kwh)}&nbsp;kWh · ${durTxt(it.min).replace(/ /g, "&nbsp;")}</div>${foot}`;
     el.querySelector(".item-name").textContent = it.name;
     el.querySelector(".edit").onclick = () => openDialog(i);
     // Quitar pide un segundo toque para confirmar
@@ -459,12 +481,13 @@ function startDrag(e, el) {
   grip.setPointerCapture(e.pointerId);
   el.classList.add("dragging");
   let lastY = e.clientY, offset = 0;
+  const gap = parseFloat(getComputedStyle(box).rowGap) || 0;
   const move = ev => {
     offset += ev.clientY - lastY; lastY = ev.clientY;
     // Si se pasa de la mitad de la tarjeta vecina, se intercambian
     const prev = el.previousElementSibling, next = el.nextElementSibling;
-    if (next && offset > next.offsetHeight / 2) { const h = next.offsetHeight + 10; box.insertBefore(next, el); offset -= h; }
-    else if (prev && offset < -prev.offsetHeight / 2) { const h = prev.offsetHeight + 10; box.insertBefore(el, prev); offset += h; }
+    if (next && offset > next.offsetHeight / 2) { const h = next.offsetHeight + gap; box.insertBefore(next, el); offset -= h; }
+    else if (prev && offset < -prev.offsetHeight / 2) { const h = prev.offsetHeight + gap; box.insertBefore(el, prev); offset += h; }
     el.style.transform = `translateY(${offset}px)`;
   };
   const end = () => {
@@ -496,7 +519,7 @@ function openDialog(i = null) {
   $("dlgTitle").textContent = it ? "Editar aparato" : "Añadir aparato";
   $("fSave").textContent = it ? "Guardar" : "Añadir";
   $("fName").value = it ? it.name : "";
-  $("fKwh").value = it ? num(it.kwh, 1) : "";
+  $("fKwh").value = it ? kwhTxt(it.kwh) : "";
   fillDurations(it?.min);
   $("fMin").value = String(it ? it.min : 60);
   $("formErr").hidden = true;
@@ -515,7 +538,9 @@ $("dlg").addEventListener("click", e => {
 $("addForm").addEventListener("submit", e => {
   e.preventDefault();
   const name = $("fName").value.trim();
-  const kwh = parseFloat($("fKwh").value.replace(",", "."));
+  // Solo números (1 / 1,5 / 0.25): antes "1,5abc" se aceptaba como 1,5
+  const kwhRaw = $("fKwh").value.trim();
+  const kwh = /^(\d+([.,]\d*)?|[.,]\d+)$/.test(kwhRaw) ? +kwhRaw.replace(",", ".") : NaN;
   const min = +$("fMin").value;
   let err = "";
   if (!name) err = "Ponle un nombre al aparato.";
@@ -528,38 +553,69 @@ $("addForm").addEventListener("submit", e => {
   $("dlg").close();
 });
 
-let loading = null, lastLoad = 0;
+// Pinta todo con la hora actual. Se llama cada minuto, al volver a la app y tras cada carga.
+function render() {
+  $("todayDate").textContent = fmtDate(Date.now());
+  pruneSlots();
+  // Sin precios de hoy (p. ej. recién pasada la medianoche) y sin otro aviso: se dice que se están cargando
+  if (!SLOTS.some(x => x.day === todayStr()) && $("status").hidden) {
+    $("status").hidden = false; $("status").className = "status"; $("status").textContent = "Cargando precios de hoy…";
+  }
+  if (dragging) return;
+  renderNow(); renderDay();
+  // No se repinta la lista si hay un "¿Quitar?" pendiente de confirmar (se perdería)
+  if (!document.querySelector(".remove.armed")) renderList();
+}
+
+let loading = null, lastTry = 0, retryTimer = null;
 function refresh() {
   // Si ya hay una carga en marcha, no se lanza otra
   return loading ||= load().finally(() => { loading = null; });
 }
 async function load() {
+  lastTry = Date.now();
+  clearTimeout(retryTimer);
   try {
     const slots = await fetchPrices();
     if (!slots.length) throw new Error("REE no devolvió precios");
-    SLOTS = slots; computeLevels(); pruneSlots(); lastLoad = Date.now();
+    SLOTS = slots; computeLevels(); pruneSlots();
     $("status").hidden = true;
-    renderNow(); renderList();
   } catch (e) {
     $("status").hidden = false; $("status").className = "status err";
-    $("status").textContent = `No se pudieron cargar los precios (${e.message}). Recarga la página en un rato.`;
-    renderList();
+    $("status").textContent = (SLOTS.length ? "No se pudieron actualizar los precios" : "No se pudieron cargar los precios")
+      + ` (${e.message}). Se reintenta solo en un minuto.`;
+    // Reintento automático en 1 minuto (antes había que esperar 30 min o recargar a mano)
+    retryTimer = setTimeout(refresh, 60e3);
   }
+  render();
 }
+
+// Cada minuto, justo al cambiar el minuto: así el precio "ahora" cambia a la hora en punto y no hasta 59 s después
+function tick() {
+  render();
+  const d = todayStr(), hm = madrid(Date.now()).hm;
+  const hasTomorrow = SLOTS.some(x => x.day > d);
+  // Sin precios de hoy (p. ej. pasada la medianoche): se piden ya, como mucho una vez por minuto.
+  // Desde las 20:15 sin los de mañana: cada 5 min, en vez de esperar a la recarga de cada 30 min.
+  const noToday = !SLOTS.some(x => x.day === d);
+  if ((noToday && Date.now() - lastTry > 60e3) || (!hasTomorrow && hm >= "20:15" && Date.now() - lastTry > 5 * 60e3)) refresh();
+  setTimeout(tick, 60e3 - Date.now() % 60e3 + 50);
+}
+
 $("version").textContent = "Versión " + VERSION;
 $("todayDate").textContent = fmtDate(Date.now());
 renderList();
 refresh();
-setInterval(() => { $("todayDate").textContent = fmtDate(Date.now()); pruneSlots(); if (SLOTS.length && !dragging) { renderNow(); renderList(); } }, 60e3);
+setTimeout(tick, 60e3 - Date.now() % 60e3 + 50);
 setInterval(refresh, 30 * 60e3);
-// Al volver a la app (sobre todo instalada en el móvil) se actualiza si los precios tienen más de 5 min
+// Al volver a la app (sobre todo instalada en el móvil) se repinta y se actualiza si los precios tienen más de 5 min
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState !== "visible") return;
-  $("todayDate").textContent = fmtDate(Date.now());
-  pruneSlots();
-  if (SLOTS.length && !dragging) { renderNow(); renderList(); }
-  if (Date.now() - lastLoad > 5 * 60e3) refresh();
+  render();
+  if (Date.now() - lastTry > 5 * 60e3) refresh();
 });
+// Al recuperar la conexión se cargan los precios sin esperar
+window.addEventListener("online", () => refresh());
 
 // Guarda una copia de la app para que abra más rápido y sin conexión (los precios siempre necesitan internet)
 if ("serviceWorker" in navigator) {

@@ -24,7 +24,8 @@ self.addEventListener("fetch", e => {
   // Por detrás se descarga la versión nueva, que se verá la próxima vez que se abra.
   if (req.mode === "navigate") {
     const net = fetch(req, { cache: "no-store" }).then(r => {
-      if (r.ok) { const copy = r.clone(); caches.open(CACHE).then(c => c.put("index.html", copy)); }
+      // Una respuesta que viene de una redirección no se guarda: Safari se niega a abrir la app con ella
+      if (r.ok && !r.redirected) { const copy = r.clone(); caches.open(CACHE).then(c => c.put("index.html", copy)); }
       return r;
     });
     e.waitUntil(net.catch(() => {}));
