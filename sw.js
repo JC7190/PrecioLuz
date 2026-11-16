@@ -1,7 +1,7 @@
 // Copia local de la app para que abra sin conexión.
 // Se abre siempre con la copia guardada (rápido y sin cobertura);
 // la versión nueva se baja por detrás y se ve en la siguiente apertura.
-const CACHE = "luz-v4";
+const CACHE = "luz-v5";
 const APP = ["./", "index.html", "manifest.json", "apple-touch-icon.png", "icon-192.png", "icon-512.png",
   "bricolage-grotesque-latin-opsz-normal.woff2", "figtree-latin-400-normal.woff2", "figtree-latin-600-normal.woff2", "jetbrains-mono-latin-400-normal.woff2", "jetbrains-mono-latin-600-normal.woff2"];
 
